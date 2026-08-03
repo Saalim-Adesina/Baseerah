@@ -82,11 +82,32 @@ ${thesisBlock(thesis)}
 ${dealDossier(deal)}
 
 === TASK ===
-Produce a full screening analysis.
-- Score each of these metrics 0-10 with the exact keys: ${METRIC_KEYS.map((m) => m.key).join(", ")}.
+Produce a full screening analysis as a single JSON object with EXACTLY these keys and no others:
+
+{
+  "overallScore": number 0-100,
+  "recommendation": "Invest" | "Progress" | "Track" | "Pass",
+  "headline": "one-sentence verdict",
+  "roundFitNote": "how this reads calibrated to the ${deal.round} stage",
+  "thesisFit": "how it fits or breaks the fund thesis",
+  "metrics": [ { "key": one of ${METRIC_KEYS.map((m) => m.key).join(" | ")}, "label": string, "score": number 0-10, "verdict": string, "evidence": string, "gap": string } ],
+  "humanCapital": { "score": number 0-10, "founderMarketFit": string, "linkedinRead": string, "meetingNotesRead": string, "biasCheck": string, "concerns": string[] },
+  "productMarketFit": string,
+  "unitEconomics": { "read": string, "benchmarks": string, "flags": string[] },
+  "moat": { "read": string, "durability": string, "sources": string[] },
+  "competitors": [ { "name": string, "positioning": string, "threatLevel": string, "differentiation": string } ],
+  "missingInformation": string[],
+  "founderQuestions": string[],
+  "risks": string[],
+  "killCriteria": string[]
+}
+
+Rules:
+- "metrics" MUST contain one entry for every one of these keys: ${METRIC_KEYS.map((m) => m.key).join(", ")}.
 - Use the fund's weights when forming the overall 0-100 score; state the round-stage calibration in roundFitNote.
-- Recommendation must be one of: Invest, Progress, Track, Pass.
 - Keep every field concise and specific: no filler, no generic startup advice.
 - founderQuestions must be the sharp questions to ask the founders next, tied to the actual gaps.
-- missingInformation must be concrete artefacts or data points you would request.`;
+- missingInformation must be concrete artefacts or data points you would request.
+- Never omit a key. If evidence is absent, say so explicitly in that field.`;
 }
+
