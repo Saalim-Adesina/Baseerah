@@ -142,7 +142,7 @@ function ThesisPage() {
             max={1}
             step={0.05}
             value={[draft.temperature]}
-            onValueChange={([value]) => set("temperature", value)}
+            onValueChange={([value]) => set("temperature", value ?? 0.35)}
           />
         </div>
       </section>
@@ -164,7 +164,7 @@ function ThesisPage() {
               step={0.05}
               value={[draft.weights[metric.key] ?? 0.5]}
               onValueChange={([value]) =>
-                set("weights", { ...draft.weights, [metric.key]: value })
+                set("weights", { ...draft.weights, [metric.key]: value ?? 0.5 })
               }
             />
             <span className="w-10 shrink-0 text-right font-mono text-sm text-muted-foreground">

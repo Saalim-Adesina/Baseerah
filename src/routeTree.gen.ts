@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ThesisRouteImport } from './routes/thesis'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DealsDealIdRouteImport } from './routes/deals.$dealId'
 import { Route as DealsNewRouteImport } from './routes/deals.new'
@@ -20,6 +21,11 @@ import { Route as DealsDealIdChatThreadIdRouteImport } from './routes/deals.$dea
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThesisRoute = ThesisRouteImport.update({
+  id: '/thesis',
+  path: '/thesis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -55,6 +61,7 @@ const DealsDealIdChatThreadIdRoute = DealsDealIdChatThreadIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/thesis': typeof ThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/$dealId': typeof DealsDealIdRouteWithChildren
   '/deals/new': typeof DealsNewRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/thesis': typeof ThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/new': typeof DealsNewRoute
   '/deals/$dealId': typeof DealsDealIdIndexRoute
@@ -73,6 +81,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/thesis': typeof ThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/$dealId': typeof DealsDealIdRouteWithChildren
   '/deals/new': typeof DealsNewRoute
@@ -84,6 +93,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/thesis'
     | '/api/chat'
     | '/deals/$dealId'
     | '/deals/new'
@@ -93,6 +103,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/thesis'
     | '/api/chat'
     | '/deals/new'
     | '/deals/$dealId'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/thesis'
     | '/api/chat'
     | '/deals/$dealId'
     | '/deals/new'
@@ -111,6 +123,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ThesisRoute: typeof ThesisRoute
   ApiChatRoute: typeof ApiChatRoute
   DealsDealIdRoute: typeof DealsDealIdRouteWithChildren
   DealsNewRoute: typeof DealsNewRoute
@@ -123,6 +136,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thesis': {
+      id: '/thesis'
+      path: '/thesis'
+      fullPath: '/thesis'
+      preLoaderRoute: typeof ThesisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -188,6 +208,7 @@ const DealsDealIdRouteWithChildren = DealsDealIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ThesisRoute: ThesisRoute,
   ApiChatRoute: ApiChatRoute,
   DealsDealIdRoute: DealsDealIdRouteWithChildren,
   DealsNewRoute: DealsNewRoute,
