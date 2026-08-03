@@ -71,22 +71,23 @@ export const analyzeDeal = createServerFn({ method: "POST" })
     const thesis = data.thesis as unknown as Thesis;
     const gateway = createLovableAiGatewayProvider(requireApiKey());
 
-    try {
-      const { output } = await generateText({
-        model: gateway(CHAT_MODEL),
-        temperature: thesis.temperature ?? 0.35,
-        output: Output.object({ schema: analysisSchema }),
-        prompt: analysisPrompt(deal, thesis),
-      });
-      return output;
-    } catch (error) {
-      if (NoObjectGeneratedError.isInstance(error) && error.text) {
-        const match = error.text.match(/\{[\s\S]*\}/);
-        if (match) return JSON.parse(match[0]);
-      }
-      throw error;
+    const { text } = await generateText({
+      model: gateway(CHAT_MODEL),
+      temperature: thesis.temperature ?? 0.35,
+      prompt: `${analysisPrompt(deal, thesis)}
+
+Return ONLY the raw JSON object described above. No markdown fences, no commentary.`,
+    });
+
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("The screening model did not return usable JSON.");
+    const parsed = analysisSchema.partial().parse(JSON.parse(match[0]));
+    if (!parsed.metrics?.length) {
+      throw new Error("The screening model returned no metric scores. Try re-running.");
     }
+    return parsed;
   });
+
 
 export const generateMemo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
