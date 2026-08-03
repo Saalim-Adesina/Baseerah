@@ -10,33 +10,110 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as DealsDealIdRouteImport } from './routes/deals.$dealId'
+import { Route as DealsNewRouteImport } from './routes/deals.new'
+import { Route as DealsDealIdIndexRouteImport } from './routes/deals.$dealId.index'
+import { Route as DealsDealIdChatIndexRouteImport } from './routes/deals.$dealId.chat.index'
+import { Route as DealsDealIdChatThreadIdRouteImport } from './routes/deals.$dealId.chat.$threadId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DealsDealIdRoute = DealsDealIdRouteImport.update({
+  id: '/deals/$dealId',
+  path: '/deals/$dealId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DealsNewRoute = DealsNewRouteImport.update({
+  id: '/deals/new',
+  path: '/deals/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DealsDealIdIndexRoute = DealsDealIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DealsDealIdRoute,
+} as any)
+const DealsDealIdChatIndexRoute = DealsDealIdChatIndexRouteImport.update({
+  id: '/chat/',
+  path: '/chat/',
+  getParentRoute: () => DealsDealIdRoute,
+} as any)
+const DealsDealIdChatThreadIdRoute = DealsDealIdChatThreadIdRouteImport.update({
+  id: '/chat/$threadId',
+  path: '/chat/$threadId',
+  getParentRoute: () => DealsDealIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
+  '/deals/$dealId': typeof DealsDealIdRouteWithChildren
+  '/deals/new': typeof DealsNewRoute
+  '/deals/$dealId/': typeof DealsDealIdIndexRoute
+  '/deals/$dealId/chat/$threadId': typeof DealsDealIdChatThreadIdRoute
+  '/deals/$dealId/chat/': typeof DealsDealIdChatIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
+  '/deals/new': typeof DealsNewRoute
+  '/deals/$dealId': typeof DealsDealIdIndexRoute
+  '/deals/$dealId/chat/$threadId': typeof DealsDealIdChatThreadIdRoute
+  '/deals/$dealId/chat': typeof DealsDealIdChatIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/chat': typeof ApiChatRoute
+  '/deals/$dealId': typeof DealsDealIdRouteWithChildren
+  '/deals/new': typeof DealsNewRoute
+  '/deals/$dealId/': typeof DealsDealIdIndexRoute
+  '/deals/$dealId/chat/$threadId': typeof DealsDealIdChatThreadIdRoute
+  '/deals/$dealId/chat/': typeof DealsDealIdChatIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/chat'
+    | '/deals/$dealId'
+    | '/deals/new'
+    | '/deals/$dealId/'
+    | '/deals/$dealId/chat/$threadId'
+    | '/deals/$dealId/chat/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/chat'
+    | '/deals/new'
+    | '/deals/$dealId'
+    | '/deals/$dealId/chat/$threadId'
+    | '/deals/$dealId/chat'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/chat'
+    | '/deals/$dealId'
+    | '/deals/new'
+    | '/deals/$dealId/'
+    | '/deals/$dealId/chat/$threadId'
+    | '/deals/$dealId/chat/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiChatRoute: typeof ApiChatRoute
+  DealsDealIdRoute: typeof DealsDealIdRouteWithChildren
+  DealsNewRoute: typeof DealsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +125,73 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deals/$dealId': {
+      id: '/deals/$dealId'
+      path: '/deals/$dealId'
+      fullPath: '/deals/$dealId'
+      preLoaderRoute: typeof DealsDealIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deals/new': {
+      id: '/deals/new'
+      path: '/deals/new'
+      fullPath: '/deals/new'
+      preLoaderRoute: typeof DealsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deals/$dealId/': {
+      id: '/deals/$dealId/'
+      path: '/'
+      fullPath: '/deals/$dealId/'
+      preLoaderRoute: typeof DealsDealIdIndexRouteImport
+      parentRoute: typeof DealsDealIdRoute
+    }
+    '/deals/$dealId/chat/': {
+      id: '/deals/$dealId/chat/'
+      path: '/chat'
+      fullPath: '/deals/$dealId/chat/'
+      preLoaderRoute: typeof DealsDealIdChatIndexRouteImport
+      parentRoute: typeof DealsDealIdRoute
+    }
+    '/deals/$dealId/chat/$threadId': {
+      id: '/deals/$dealId/chat/$threadId'
+      path: '/chat/$threadId'
+      fullPath: '/deals/$dealId/chat/$threadId'
+      preLoaderRoute: typeof DealsDealIdChatThreadIdRouteImport
+      parentRoute: typeof DealsDealIdRoute
+    }
   }
 }
 
+interface DealsDealIdRouteChildren {
+  DealsDealIdIndexRoute: typeof DealsDealIdIndexRoute
+  DealsDealIdChatThreadIdRoute: typeof DealsDealIdChatThreadIdRoute
+  DealsDealIdChatIndexRoute: typeof DealsDealIdChatIndexRoute
+}
+
+const DealsDealIdRouteChildren: DealsDealIdRouteChildren = {
+  DealsDealIdIndexRoute: DealsDealIdIndexRoute,
+  DealsDealIdChatThreadIdRoute: DealsDealIdChatThreadIdRoute,
+  DealsDealIdChatIndexRoute: DealsDealIdChatIndexRoute,
+}
+
+const DealsDealIdRouteWithChildren = DealsDealIdRoute._addFileChildren(
+  DealsDealIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiChatRoute: ApiChatRoute,
+  DealsDealIdRoute: DealsDealIdRouteWithChildren,
+  DealsNewRoute: DealsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

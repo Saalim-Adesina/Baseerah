@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -77,19 +78,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Meridian — Investment Deal Screening" },
+      {
+        name: "description",
+        content:
+          "Automated startup deal screening for VCs, incubators and private equity: thesis-driven scoring, IC memos and deal chat.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -114,13 +118,53 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function TopNav() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
+        <Link to="/" className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
+            M
+          </span>
+          <span className="font-display text-lg tracking-tight">Meridian</span>
+        </Link>
+        <nav className="flex items-center gap-1 text-sm">
+          <Link
+            to="/"
+            activeOptions={{ exact: true }}
+            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+          >
+            Pipeline
+          </Link>
+          <Link
+            to="/deals/new"
+            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+          >
+            New deal
+          </Link>
+          <Link
+            to="/thesis"
+            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+          >
+            Thesis
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="min-h-screen">
+        <TopNav />
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </div>
+      <Toaster position="top-right" />
     </QueryClientProvider>
   );
 }
