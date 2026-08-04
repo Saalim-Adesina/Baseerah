@@ -19,7 +19,7 @@ export type WebhookAuditRow = {
   mapping_source: string | null;
   outcome: string;
   notes: string | null;
-  applied_row: Record<string, unknown> | null;
+  applied_row: Record<string, string | number | boolean | null> | null;
 };
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
