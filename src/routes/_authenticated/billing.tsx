@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { confirmCheckout, openBillingPortal, startCheckout } from "@/lib/billing.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
@@ -27,6 +30,51 @@ export const Route = createFileRoute("/_authenticated/billing")({
 
 function Billing() {
   const { profile, subscription, loading } = useAccount();
+  const checkout = useServerFn(startCheckout);
+  const confirm = useServerFn(confirmCheckout);
+  const portal = useServerFn(openBillingPortal);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkoutId = new URLSearchParams(window.location.search).get("checkout_id");
+    if (!checkoutId) return;
+    void confirm({ data: { checkoutId } })
+      .then((r) => {
+        if (r.status === "succeeded" || r.status === "confirmed") {
+          toast.success("Payment confirmed — your plan is being activated.");
+        } else if (r.status === "failed" || r.status === "expired") {
+          toast.error("That checkout did not complete. Nothing was charged.");
+        } else {
+          toast.info("Checkout still processing — we'll update your plan shortly.");
+        }
+      })
+      .catch(() => toast.error("Could not verify that checkout."))
+      .finally(() => window.history.replaceState({}, "", "/billing"));
+  }, [confirm]);
+
+  async function choosePlan(planId: string) {
+    setBusy(planId);
+    try {
+      const { url } = await checkout({
+        data: { planId: planId as "angel" | "syndicate" | "institution", origin: window.location.origin },
+      });
+      window.location.href = url;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not start checkout.");
+      setBusy(null);
+    }
+  }
+
+  async function manageBilling() {
+    setBusy("portal");
+    try {
+      const { url } = await portal({ data: undefined });
+      window.location.href = url;
+    } catch {
+      toast.error("Billing portal is unavailable — no subscription yet?");
+      setBusy(null);
+    }
+  }
   const typeLabel = INVESTOR_TYPES.find((t) => t.value === profile?.investor_type)?.label;
   const currentPlan = planById(subscription?.plan);
   const showSeats = seatsSupported(subscription?.plan);
@@ -55,6 +103,20 @@ function Billing() {
             Deals screened this period: {subscription?.deals_screened_this_period ?? 0}
           </p>
           {showSeats ? <p>Seats: {subscription?.seats ?? currentPlan?.seatsIncluded}</p> : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            disabled={busy === "portal"}
+            onClick={() => void manageBilling()}
+          >
+            {busy === "portal" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            Manage billing
+          </Button>
         </div>
       </div>
 
@@ -109,10 +171,10 @@ function Billing() {
             <Button
               className="mt-6"
               variant={plan.highlight ? "default" : "outline"}
-              onClick={() =>
-                toast.info("Checkout is being connected — confirm payments to go live.")
-              }
+              disabled={busy !== null || subscription?.plan === plan.id}
+              onClick={() => void choosePlan(plan.id)}
             >
+              {busy === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {subscription?.plan === plan.id ? "Current plan" : `Choose ${plan.name}`}
             </Button>
           </div>

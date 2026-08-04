@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SEAT_ROLES, type Plan, type SeatRole } from "@/lib/plans";
+import { atSeatLimit, overageSeats, seatsUsed, totalSeats } from "@/lib/seats";
 
 type Member = {
   id: string;
@@ -52,10 +53,10 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
     void load();
   }, [load]);
 
-  const totalSeats = Math.max(seats, plan.seatsIncluded);
-  const used = members.length + 1; // owner occupies a seat
-  const atLimit = plan.maxSeats !== null && used >= plan.maxSeats;
-  const overIncluded = used > totalSeats;
+  const total = totalSeats(plan, seats);
+  const used = seatsUsed(members.length);
+  const atLimit = atSeatLimit(plan, members.length);
+  const overage = overageSeats(plan, seats, members.length);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -119,7 +120,7 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
         <div>
           <p className="label-caps">Team seats</p>
           <h2 className="mt-1 text-2xl">
-            {used} of {plan.maxSeats === null ? "unlimited" : totalSeats} seats used
+            {used} of {plan.maxSeats === null ? "unlimited" : total} seats used
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {plan.name} includes {plan.seatsIncluded} seats
@@ -129,9 +130,9 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
             . Each teammate gets their own login into the shared pipeline.
           </p>
         </div>
-        {overIncluded ? (
+        {overage > 0 ? (
           <Badge variant="outline" className="border-primary text-primary">
-            {used - totalSeats} seat{used - totalSeats > 1 ? "s" : ""} over — billed at renewal
+            {overage} seat{overage > 1 ? "s" : ""} over — billed at renewal
           </Badge>
         ) : null}
       </div>

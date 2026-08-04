@@ -12,6 +12,10 @@ export type Plan = {
   extraSeatPrice: string | null;
   /** Hard ceiling on seats, null = unlimited. */
   maxSeats: number | null;
+  /** Price per additional seat in cents, null when extras aren't billed. */
+  extraSeatCents: number | null;
+  /** Polar product id used for checkout, null for contact-sales plans. */
+  polarProductId: string | null;
 };
 
 export const SEAT_ROLES = [
@@ -52,6 +56,8 @@ export const PLANS: Plan[] = [
     seatsIncluded: 1,
     extraSeatPrice: null,
     maxSeats: 1,
+    extraSeatCents: null,
+    polarProductId: "c59a5ea7-e21e-4894-98a3-3ac1c1fa433e",
   },
   {
     id: "syndicate",
@@ -69,6 +75,8 @@ export const PLANS: Plan[] = [
     seatsIncluded: 5,
     extraSeatPrice: "$29 / month",
     maxSeats: 25,
+    extraSeatCents: 2900,
+    polarProductId: "964f4eb8-91b2-4289-ab4a-35d8c26d9420",
   },
   {
     id: "institution",
@@ -86,6 +94,16 @@ export const PLANS: Plan[] = [
     seatsIncluded: 20,
     extraSeatPrice: "Included",
     maxSeats: null,
+    extraSeatCents: null,
+    polarProductId: "a6970a25-435f-4278-9657-bc89fd7a5598",
   },
 
 ];
+
+/** Polar product for extra seats beyond a plan's bundle. */
+export const EXTRA_SEAT_PRODUCT_ID = "7afd79f7-1f49-47bb-8812-b985800c0354";
+
+/** Maps a Polar product id back to an app plan id. */
+export function planIdFromPolarProduct(productId: string | null | undefined) {
+  return PLANS.find((p) => p.polarProductId === productId)?.id;
+}
