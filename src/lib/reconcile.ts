@@ -44,7 +44,7 @@ export type ReconcileItem = {
   app: AppSubRow | null;
   issues: ReconcileIssue[];
   /** Patch that would bring the app row in line with Polar. */
-  fix: Record<string, unknown> | null;
+  fix: Record<string, string | number | null> | null;
 };
 
 export type ReconcileReport = {
@@ -146,7 +146,7 @@ export function reconcile(
 
     used.add(app.userId);
     const issues: ReconcileIssue[] = [];
-    const fix: Record<string, unknown> = {};
+    const fix: Record<string, string | number | null> = {};
 
     if (app.polarSubscriptionId !== sub.id) {
       issues.push({
