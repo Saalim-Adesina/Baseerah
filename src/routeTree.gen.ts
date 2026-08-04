@@ -16,7 +16,9 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedThesisRouteImport } from './routes/_authenticated/thesis'
+import { Route as AuthenticatedWebhookAuditRouteImport } from './routes/_authenticated/webhook-audit'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedDealsDealIdRouteImport } from './routes/_authenticated/deals.$dealId'
 import { Route as AuthenticatedDealsNewRouteImport } from './routes/_authenticated/deals.new'
 import { Route as ApiPublicPolarWebhookRouteImport } from './routes/api/public/polar-webhook'
@@ -58,9 +60,20 @@ const AuthenticatedThesisRoute = AuthenticatedThesisRouteImport.update({
   path: '/thesis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWebhookAuditRoute =
+  AuthenticatedWebhookAuditRouteImport.update({
+    id: '/webhook-audit',
+    path: '/webhook-audit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDealsDealIdRoute =
@@ -105,7 +118,9 @@ export interface FileRoutesByFullPath {
   '/billing': typeof AuthenticatedBillingRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/thesis': typeof AuthenticatedThesisRoute
+  '/webhook-audit': typeof AuthenticatedWebhookAuditRoute
   '/api/chat': typeof ApiChatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
@@ -120,7 +135,9 @@ export interface FileRoutesByTo {
   '/billing': typeof AuthenticatedBillingRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/thesis': typeof AuthenticatedThesisRoute
+  '/webhook-audit': typeof AuthenticatedWebhookAuditRoute
   '/api/chat': typeof ApiChatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdIndexRoute
@@ -136,7 +153,9 @@ export interface FileRoutesById {
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/thesis': typeof AuthenticatedThesisRoute
+  '/_authenticated/webhook-audit': typeof AuthenticatedWebhookAuditRoute
   '/api/chat': typeof ApiChatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/_authenticated/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
@@ -153,7 +172,9 @@ export interface FileRouteTypes {
     | '/billing'
     | '/pipeline'
     | '/thesis'
+    | '/webhook-audit'
     | '/api/chat'
+    | '/invite/$token'
     | '/deals/$dealId'
     | '/deals/new'
     | '/api/public/polar-webhook'
@@ -168,7 +189,9 @@ export interface FileRouteTypes {
     | '/billing'
     | '/pipeline'
     | '/thesis'
+    | '/webhook-audit'
     | '/api/chat'
+    | '/invite/$token'
     | '/deals/new'
     | '/api/public/polar-webhook'
     | '/deals/$dealId'
@@ -183,7 +206,9 @@ export interface FileRouteTypes {
     | '/_authenticated/billing'
     | '/_authenticated/pipeline'
     | '/_authenticated/thesis'
+    | '/_authenticated/webhook-audit'
     | '/api/chat'
+    | '/invite/$token'
     | '/_authenticated/deals/$dealId'
     | '/_authenticated/deals/new'
     | '/api/public/polar-webhook'
@@ -198,6 +223,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiChatRoute: typeof ApiChatRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicPolarWebhookRoute: typeof ApiPublicPolarWebhookRoute
 }
 
@@ -252,11 +278,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedThesisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/webhook-audit': {
+      id: '/_authenticated/webhook-audit'
+      path: '/webhook-audit'
+      fullPath: '/webhook-audit'
+      preLoaderRoute: typeof AuthenticatedWebhookAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/deals/$dealId': {
@@ -328,6 +368,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedThesisRoute: typeof AuthenticatedThesisRoute
+  AuthenticatedWebhookAuditRoute: typeof AuthenticatedWebhookAuditRoute
   AuthenticatedDealsDealIdRoute: typeof AuthenticatedDealsDealIdRouteWithChildren
   AuthenticatedDealsNewRoute: typeof AuthenticatedDealsNewRoute
 }
@@ -336,6 +377,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedThesisRoute: AuthenticatedThesisRoute,
+  AuthenticatedWebhookAuditRoute: AuthenticatedWebhookAuditRoute,
   AuthenticatedDealsDealIdRoute: AuthenticatedDealsDealIdRouteWithChildren,
   AuthenticatedDealsNewRoute: AuthenticatedDealsNewRoute,
 }
@@ -349,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiChatRoute: ApiChatRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiPublicPolarWebhookRoute: ApiPublicPolarWebhookRoute,
 }
 export const routeTree = rootRouteImport

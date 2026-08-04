@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Trash2, UserPlus } from "lucide-react";
+import { Copy, Loader2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,8 @@ type Member = {
   role: string;
   status: string;
   created_at: string;
+  invite_token: string | null;
+  accepted_at: string | null;
 };
 
 const inviteSchema = z.object({
@@ -42,7 +44,7 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("team_members")
-      .select("id,email,full_name,role,status,created_at")
+      .select("id,email,full_name,role,status,created_at,invite_token,accepted_at")
       .order("created_at", { ascending: true });
     if (error) toast.error(error.message);
     setMembers((data as Member[] | null) ?? []);
@@ -91,7 +93,7 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
     }
     setEmail("");
     setName("");
-    toast.success("Seat assigned — invite sent to their inbox.");
+    toast.success("Seat assigned — share the invite link so they can join.");
     void load();
   }
 
@@ -112,6 +114,20 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
     }
     setMembers((m) => m.filter((x) => x.id !== id));
     toast.success("Seat released.");
+  }
+
+  async function copyInvite(token: string | null) {
+    if (!token) {
+      toast.error("No invite link for this seat yet.");
+      return;
+    }
+    const url = `${window.location.origin}/invite/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Invite link copied — send it to your teammate.");
+    } catch {
+      toast.info(url);
+    }
   }
 
   return (
@@ -195,7 +211,10 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
               <div>
                 <p className="text-sm">{m.full_name || m.email}</p>
                 <p className="text-xs text-muted-foreground">
-                  {m.email} · {m.status === "invited" ? "Invite pending" : "Active"}
+                  {m.email} ·{" "}
+                  {m.accepted_at
+                    ? `Joined ${new Date(m.accepted_at).toLocaleDateString()}`
+                    : "Invite pending"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -211,6 +230,17 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {m.accepted_at ? null : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Copy invite link for ${m.email}`}
+                    onClick={() => void copyInvite(m.invite_token)}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Invite link
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
