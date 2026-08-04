@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedThesisRouteImport } from './routes/_authenticated/thesis'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDealsDealIdRouteImport } from './routes/_authenticated/deals.$dealId'
@@ -23,10 +24,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedThesisRoute = AuthenticatedThesisRouteImport.update({
-  id: '/_authenticated/thesis',
-  path: '/thesis',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedThesisRoute = AuthenticatedThesisRouteImport.update({
+  id: '/thesis',
+  path: '/thesis',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
@@ -35,14 +40,14 @@ const ApiChatRoute = ApiChatRouteImport.update({
 } as any)
 const AuthenticatedDealsDealIdRoute =
   AuthenticatedDealsDealIdRouteImport.update({
-    id: '/_authenticated/deals/$dealId',
+    id: '/deals/$dealId',
     path: '/deals/$dealId',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDealsNewRoute = AuthenticatedDealsNewRouteImport.update({
-  id: '/_authenticated/deals/new',
+  id: '/deals/new',
   path: '/deals/new',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDealsDealIdIndexRoute =
   AuthenticatedDealsDealIdIndexRouteImport.update({
@@ -85,6 +90,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/thesis': typeof AuthenticatedThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
@@ -116,6 +122,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/_authenticated/thesis'
     | '/api/chat'
     | '/_authenticated/deals/$dealId'
@@ -127,10 +134,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedThesisRoute: typeof AuthenticatedThesisRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
-  AuthenticatedDealsDealIdRoute: typeof AuthenticatedDealsDealIdRouteWithChildren
-  AuthenticatedDealsNewRoute: typeof AuthenticatedDealsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -142,12 +147,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/thesis': {
       id: '/_authenticated/thesis'
       path: '/thesis'
       fullPath: '/thesis'
       preLoaderRoute: typeof AuthenticatedThesisRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
       id: '/api/chat'
@@ -161,14 +173,14 @@ declare module '@tanstack/react-router' {
       path: '/deals/$dealId'
       fullPath: '/deals/$dealId'
       preLoaderRoute: typeof AuthenticatedDealsDealIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/deals/new': {
       id: '/_authenticated/deals/new'
       path: '/deals/new'
       fullPath: '/deals/new'
       preLoaderRoute: typeof AuthenticatedDealsNewRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/deals/$dealId/': {
       id: '/_authenticated/deals/$dealId/'
@@ -214,12 +226,25 @@ const AuthenticatedDealsDealIdRouteWithChildren =
     AuthenticatedDealsDealIdRouteChildren,
   )
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedThesisRoute: typeof AuthenticatedThesisRoute
+  AuthenticatedDealsDealIdRoute: typeof AuthenticatedDealsDealIdRouteWithChildren
+  AuthenticatedDealsNewRoute: typeof AuthenticatedDealsNewRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedThesisRoute: AuthenticatedThesisRoute,
-  ApiChatRoute: ApiChatRoute,
   AuthenticatedDealsDealIdRoute: AuthenticatedDealsDealIdRouteWithChildren,
   AuthenticatedDealsNewRoute: AuthenticatedDealsNewRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
