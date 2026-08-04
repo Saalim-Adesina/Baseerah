@@ -6,7 +6,31 @@ export type Plan = {
   audience: string;
   highlight?: boolean;
   features: string[];
+  /** Seats bundled with the plan. Angel is a single-seat plan. */
+  seatsIncluded: number;
+  /** Price per additional seat, null when seats are not purchasable. */
+  extraSeatPrice: string | null;
+  /** Hard ceiling on seats, null = unlimited. */
+  maxSeats: number | null;
 };
+
+export const SEAT_ROLES = [
+  { value: "admin", label: "Admin", blurb: "Full access, can manage the thesis and billing." },
+  { value: "analyst", label: "Analyst", blurb: "Screens deals, writes memos, runs chat." },
+  { value: "viewer", label: "Viewer", blurb: "Read-only access to memos and scorecards." },
+] as const;
+
+export type SeatRole = (typeof SEAT_ROLES)[number]["value"];
+
+export function planById(id: string | undefined) {
+  return PLANS.find((p) => p.id === id);
+}
+
+export function seatsSupported(planId: string | undefined) {
+  const plan = planById(planId);
+  return !!plan && plan.seatsIncluded > 1;
+}
+
 
 export const PLANS: Plan[] = [
   {
