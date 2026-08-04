@@ -85,11 +85,23 @@ export function getCheckoutSession(id: string) {
   return polarFetch<PolarCheckout>(`/checkouts/${id}`);
 }
 
-export function createPortalSession(externalCustomerId: string) {
-  return polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
-    method: "POST",
-    body: JSON.stringify({ external_customer_id: externalCustomerId }),
-  });
+/**
+ * Opens the customer portal. Polar rejects `external_customer_id` for team
+ * customers ("member_id is required"), so fall back to the Polar customer id.
+ */
+export async function createPortalSession(externalCustomerId: string, customerId?: string | null) {
+  try {
+    return await polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
+      method: "POST",
+      body: JSON.stringify({ external_customer_id: externalCustomerId }),
+    });
+  } catch (error) {
+    if (!customerId) throw error;
+    return await polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
+      method: "POST",
+      body: JSON.stringify({ customer_id: customerId }),
+    });
+  }
 }
 
 /* ------------------------------------------------------------------ */

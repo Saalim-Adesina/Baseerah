@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Webhook } from "standardwebhooks";
-import { planIdFromPolarProduct } from "@/lib/plans";
+import { planById, planIdFromPolarProduct } from "@/lib/plans";
 
 type PolarEvent = {
   type: string;
@@ -13,6 +13,7 @@ export function subscriptionUpdateFromEvent(event: PolarEvent) {
     id?: string;
     status?: string;
     product_id?: string;
+    product?: { id?: string } | null;
     current_period_end?: string | null;
     customer?: { id?: string; external_id?: string | null } | null;
     metadata?: Record<string, string> | null;
@@ -20,23 +21,37 @@ export function subscriptionUpdateFromEvent(event: PolarEvent) {
   const userId = d.customer?.external_id ?? d.metadata?.["user_id"] ?? null;
   if (!userId) return null;
 
-  const planId = planIdFromPolarProduct(d.product_id);
+  const productId = d.product_id ?? d.product?.id ?? null;
+  // Product id first; checkout metadata is the fallback when the product isn't
+  // mapped (e.g. a sandbox product id we don't know about).
+  const metaPlan = d.metadata?.["plan"];
+  const planId =
+    planIdFromPolarProduct(productId) ?? (metaPlan && planById(metaPlan) ? metaPlan : undefined);
   const revoked = event.type === "subscription.revoked" || event.type === "subscription.canceled";
-  const seats = d.metadata?.["seats"] ? Number(d.metadata["seats"]) : undefined;
+  const metaSeats = d.metadata?.["seats"] ? Number(d.metadata["seats"]) : undefined;
+  // Fall back to the seats bundled with the plan so a plan upgrade always
+  // carries its seat allowance onto the app row.
+  const seats =
+    metaSeats && Number.isFinite(metaSeats)
+      ? metaSeats
+      : planId && !revoked
+        ? planById(planId)?.seatsIncluded
+        : undefined;
 
   return {
     userId,
     row: {
       ...(planId && !revoked ? { plan: planId } : {}),
-      ...(revoked ? { plan: "trial", status: "canceled" } : { status: d.status ?? "active" }),
-      ...(seats && Number.isFinite(seats) ? { seats } : {}),
+      ...(revoked ? { plan: "trial", status: "canceled", seats: 1 } : { status: d.status ?? "active" }),
+      ...(!revoked && seats ? { seats } : {}),
       polar_subscription_id: d.id ?? null,
-      polar_product_id: d.product_id ?? null,
+      polar_product_id: productId,
       polar_customer_id: d.customer?.id ?? null,
       current_period_end: d.current_period_end ?? null,
     },
   };
 }
+
 
 export const Route = createFileRoute("/api/public/polar-webhook")({
   server: {
