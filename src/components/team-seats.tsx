@@ -194,10 +194,14 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
         <div className="flex items-center justify-between py-3">
           <div>
             <p className="text-sm">You (account owner)</p>
-            <p className="text-xs text-muted-foreground">Billing, thesis and full pipeline access</p>
+            <p className="text-xs text-muted-foreground">
+              Billing, thesis and full pipeline access — the owner login isn&apos;t counted twice;
+              your seat is the admin seat listed below.
+            </p>
           </div>
           <Badge variant="secondary">Owner</Badge>
         </div>
+
 
         {loading ? (
           <p className="py-4 text-sm text-muted-foreground">Loading seats…</p>
