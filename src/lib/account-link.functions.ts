@@ -119,7 +119,13 @@ export const syncMySubscriptionFromPolar = createServerFn({ method: "POST" })
     };
     if (plan) patch["plan"] = plan;
     const metaSeats = Number(sub.metadata?.["seats"] ?? "");
-    if (Number.isFinite(metaSeats) && metaSeats > 0) patch["seats"] = metaSeats;
+    if (Number.isFinite(metaSeats) && metaSeats > 0) {
+      patch["seats"] = metaSeats;
+    } else if (plan) {
+      const { planById } = await import("@/lib/plans");
+      const seats = planById(plan)?.seatsIncluded;
+      if (seats) patch["seats"] = seats;
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
