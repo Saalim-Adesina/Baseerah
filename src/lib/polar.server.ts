@@ -211,3 +211,36 @@ export function resolveProductId(key: string, fallback: string | null) {
   }
   return fallback;
 }
+
+/* ------------------------------------------------------------------ */
+/* Subscription listing (used by reconciliation)                        */
+/* ------------------------------------------------------------------ */
+
+export type PolarSubscription = {
+  id: string;
+  status: string;
+  product_id?: string | null;
+  product?: { id?: string; name?: string } | null;
+  current_period_end?: string | null;
+  metadata?: Record<string, string> | null;
+  customer?: {
+    id?: string;
+    email?: string | null;
+    external_id?: string | null;
+  } | null;
+};
+
+/** Every subscription in the organization, following pagination. */
+export async function listAllSubscriptions(): Promise<PolarSubscription[]> {
+  const out: PolarSubscription[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const res = await polarFetch<{
+      items: PolarSubscription[];
+      pagination?: { max_page?: number };
+    }>(`/subscriptions?limit=100&page=${page}`);
+    out.push(...(res.items ?? []));
+    const max = res.pagination?.max_page ?? 1;
+    if (page >= max || (res.items ?? []).length === 0) break;
+  }
+  return out;
+}
