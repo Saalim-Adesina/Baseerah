@@ -15,11 +15,14 @@ export const startCheckout = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => checkoutInput.parse(data))
   .handler(async ({ data, context }) => {
     const plan = PLANS.find((p) => p.id === data.planId);
-    if (!plan?.polarProductId) throw new Error("This plan is not purchasable online.");
+    if (!plan) throw new Error("Unknown plan.");
 
-    const { createCheckoutSession } = await import("@/lib/polar.server");
+    const { createCheckoutSession, resolveProductId } = await import("@/lib/polar.server");
+    const productId = resolveProductId(plan.id, plan.polarProductId);
+    if (!productId) throw new Error("This plan is not purchasable online.");
+
     const checkout = await createCheckoutSession({
-      productId: plan.polarProductId,
+      productId,
       externalCustomerId: context.userId,
       customerEmail: (context.claims as { email?: string } | null)?.email ?? null,
       successUrl: `${data.origin}/billing?checkout_id={CHECKOUT_ID}`,
@@ -39,9 +42,9 @@ export const startSeatCheckout = createServerFn({ method: "POST" })
     z.object({ origin: z.string().url(), seats: z.number().int().min(1).max(100) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    const { createCheckoutSession } = await import("@/lib/polar.server");
+    const { createCheckoutSession, resolveProductId } = await import("@/lib/polar.server");
     const checkout = await createCheckoutSession({
-      productId: EXTRA_SEAT_PRODUCT_ID,
+      productId: resolveProductId("extra_seat", EXTRA_SEAT_PRODUCT_ID)!,
       externalCustomerId: context.userId,
       successUrl: `${data.origin}/billing?checkout_id={CHECKOUT_ID}`,
       metadata: { kind: "extra_seat", seats: String(data.seats), user_id: context.userId },
