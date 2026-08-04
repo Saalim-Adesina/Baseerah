@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { confirmCheckout, openBillingPortal, startCheckout } from "@/lib/billing.functions";
 import { syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
+import { isBillingAdmin } from "@/lib/reconcile.functions";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
@@ -36,6 +38,14 @@ function Billing() {
   const portal = useServerFn(openBillingPortal);
   const syncBilling = useServerFn(syncMySubscriptionFromPolar);
   const [busy, setBusy] = useState<string | null>(null);
+  const checkAdmin = useServerFn(isBillingAdmin);
+  const [admin, setAdmin] = useState(false);
+
+  useEffect(() => {
+    void checkAdmin({} as never)
+      .then((r) => setAdmin(!!(r as { admin: boolean }).admin))
+      .catch(() => setAdmin(false));
+  }, [checkAdmin]);
 
   useEffect(() => {
     const checkoutId = new URLSearchParams(window.location.search).get("checkout_id");
@@ -141,6 +151,24 @@ function Billing() {
           </p>
         </div>
       )}
+
+      {admin ? (
+        <div className="panel mt-8 flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+          <div>
+            <p className="label-caps">Admin</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review incoming billing events, how each was matched to an account, and the plan and
+              seat changes applied.
+            </p>
+          </div>
+          <Link
+            to="/webhook-audit"
+            className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
+          >
+            Billing webhook audit
+          </Link>
+        </div>
+      ) : null}
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         {PLANS.map((plan) => (
