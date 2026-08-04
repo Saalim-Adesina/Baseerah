@@ -19,7 +19,7 @@ import {
   useStoreValue,
 } from "@/lib/store";
 
-export const Route = createFileRoute("/deals/$dealId/chat/$threadId")({
+export const Route = createFileRoute("/_authenticated/deals/$dealId/chat/$threadId")({
   component: ThreadPage,
 });
 

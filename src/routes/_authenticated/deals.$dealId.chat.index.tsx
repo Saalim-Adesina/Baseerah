@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 import { createThread, getDealThreads } from "@/lib/store";
 
-export const Route = createFileRoute("/deals/$dealId/chat/")({
+export const Route = createFileRoute("/_authenticated/deals/$dealId/chat/")({
   component: ChatIndex,
 });
 

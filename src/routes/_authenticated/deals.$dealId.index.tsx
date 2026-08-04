@@ -19,7 +19,7 @@ import { analyzeDeal, generateMemo, generatePassEmail } from "@/lib/deal-ai.func
 import { getDeal, getThesis, updateDeal, useHydrated, useStoreValue } from "@/lib/store";
 import type { Analysis, Deal } from "@/lib/types";
 
-export const Route = createFileRoute("/deals/$dealId/")({
+export const Route = createFileRoute("/_authenticated/deals/$dealId/")({
   component: DealAnalysis,
 });
 
