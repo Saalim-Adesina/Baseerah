@@ -42,7 +42,8 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["POLAR_WEBHOOK_SECRET"];
+        const { polarWebhookSecret } = await import("@/lib/polar.server");
+        const secret = polarWebhookSecret();
         if (!secret) return new Response("Not configured", { status: 500 });
 
         const body = await request.text();
