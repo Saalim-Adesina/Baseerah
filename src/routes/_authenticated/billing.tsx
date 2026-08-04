@@ -4,6 +4,7 @@ import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { confirmCheckout, openBillingPortal, startCheckout } from "@/lib/billing.functions";
+import { syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
@@ -33,6 +34,7 @@ function Billing() {
   const checkout = useServerFn(startCheckout);
   const confirm = useServerFn(confirmCheckout);
   const portal = useServerFn(openBillingPortal);
+  const syncBilling = useServerFn(syncMySubscriptionFromPolar);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,6 +53,12 @@ function Billing() {
       .catch(() => toast.error("Could not verify that checkout."))
       .finally(() => window.history.replaceState({}, "", "/billing"));
   }, [confirm]);
+
+  // Reconcile this account against Polar on every visit, matching on email.
+  // Covers subscriptions bought before the app account existed.
+  useEffect(() => {
+    void syncBilling({}).catch(() => undefined);
+  }, [syncBilling]);
 
   async function choosePlan(planId: string) {
     setBusy(planId);
