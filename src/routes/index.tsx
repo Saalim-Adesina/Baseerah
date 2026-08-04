@@ -116,6 +116,13 @@ function Landing() {
                     {plan.cadence}
                   </span>
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {plan.maxSeats === 1
+                    ? "Single seat"
+                    : plan.maxSeats === null
+                      ? `${plan.seatsIncluded} seats included · unlimited`
+                      : `${plan.seatsIncluded} seats included · up to ${plan.maxSeats}`}
+                </p>
                 <ul className="mt-5 flex-1 space-y-2 text-sm">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex gap-2">
