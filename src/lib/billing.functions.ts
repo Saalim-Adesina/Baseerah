@@ -67,6 +67,11 @@ export const openBillingPortal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { createPortalSession } = await import("@/lib/polar.server");
-    const session = await createPortalSession(context.userId);
+    const { data: row } = await context.supabase
+      .from("subscriptions")
+      .select("polar_customer_id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const session = await createPortalSession(context.userId, row?.polar_customer_id ?? null);
     return { url: session.customer_portal_url };
   });
