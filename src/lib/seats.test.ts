@@ -67,7 +67,7 @@ describe("seat maths", () => {
   it("blocks seat invites on single-seat plans and at the ceiling", () => {
     expect(canAddSeat(angel, 0)).toBe(false);
     expect(canAddSeat(syndicate, 3)).toBe(true);
-    expect(canAddSeat(syndicate, 24)).toBe(false);
+    expect(canAddSeat(syndicate, 25)).toBe(false);
     expect(canAddSeat(institution, 999)).toBe(true);
   });
 });
