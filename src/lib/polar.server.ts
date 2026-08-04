@@ -195,3 +195,19 @@ export function listWebhookDeliveries(endpointId?: string) {
   const q = endpointId ? `?endpoint_id=${endpointId}&limit=20` : "?limit=20";
   return polarFetch<{ items: unknown[] }>(`/webhooks/deliveries${q}`);
 }
+
+/* ------------------------------------------------------------------ */
+/* Product ids                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Sandbox products are distinct from live ones, so allow env overrides such as
+ * POLAR_SANDBOX_PRODUCT_ANGEL / _SYNDICATE / _INSTITUTION / _EXTRA_SEAT.
+ */
+export function resolveProductId(key: string, fallback: string | null) {
+  if (polarServer() === "sandbox") {
+    const override = process.env[`POLAR_SANDBOX_PRODUCT_${key.toUpperCase()}`];
+    if (override) return override;
+  }
+  return fallback;
+}
