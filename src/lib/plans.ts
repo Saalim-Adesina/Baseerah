@@ -49,6 +49,9 @@ export const PLANS: Plan[] = [
       "One-click polite pass emails",
       "Deal chat and IC-style memos",
     ],
+    seatsIncluded: 1,
+    extraSeatPrice: null,
+    maxSeats: 1,
   },
   {
     id: "syndicate",
@@ -61,7 +64,11 @@ export const PLANS: Plan[] = [
       "Up to 750 screened deals / month",
       "Batch screening for cohorts",
       "Shareable memos for your backers",
+      "5 team seats included, $29 / extra seat",
     ],
+    seatsIncluded: 5,
+    extraSeatPrice: "$29 / month",
+    maxSeats: 25,
   },
   {
     id: "institution",
@@ -73,7 +80,12 @@ export const PLANS: Plan[] = [
       "Everything in Syndicate",
       "Unlimited screening volume",
       "Multiple theses and mandates",
+      "Unlimited team seats with roles",
       "Onboarding and priority support",
     ],
+    seatsIncluded: 20,
+    extraSeatPrice: "Included",
+    maxSeats: null,
   },
+
 ];
