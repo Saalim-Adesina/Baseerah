@@ -108,7 +108,12 @@ export function reconcile(
     let app: AppSubRow | undefined;
     let matchedBy: ReconcileItem["matchedBy"] = null;
 
-    if (bySubId.has(sub.id)) {
+    // Email is the primary key between Polar and the app: a person is one
+    // account, whatever ids either side happens to hold.
+    if (sub.email && byEmail.has(sub.email.toLowerCase())) {
+      app = byEmail.get(sub.email.toLowerCase());
+      matchedBy = "email";
+    } else if (bySubId.has(sub.id)) {
       app = bySubId.get(sub.id);
       matchedBy = "subscription_id";
     } else if (sub.externalCustomerId && byUser.has(sub.externalCustomerId)) {
@@ -117,10 +122,8 @@ export function reconcile(
     } else if (sub.customerId && byCustomer.has(sub.customerId)) {
       app = byCustomer.get(sub.customerId);
       matchedBy = "customer_id";
-    } else if (sub.email && byEmail.has(sub.email.toLowerCase())) {
-      app = byEmail.get(sub.email.toLowerCase());
-      matchedBy = "email";
     }
+
 
     if (!app) {
       items.push({

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
+import { checkEmailForSignup } from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -40,12 +41,34 @@ function AuthPage() {
   const [firmName, setFirmName] = useState("");
   const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [busy, setBusy] = useState(false);
+  const [claimNotice, setClaimNotice] = useState<string | null>(null);
+
+  async function sendReset(target: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(target, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password link sent — check your email to set a password.");
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     try {
       if (isSignUp) {
+        // Email is the primary key across billing and the app: never let a
+        // second account be created for an email that already has either.
+        const check = await checkEmailForSignup({ data: { email } });
+        if (check.action !== "signup") {
+          setIsSignUp(false);
+          setClaimNotice(check.message);
+          toast.error(check.message);
+          if (check.action === "reset") await sendReset(email);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -127,6 +150,12 @@ function AuthPage() {
           <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
         </div>
 
+        {claimNotice ? (
+          <div className="mb-5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2.5 text-sm">
+            {claimNotice}
+          </div>
+        ) : null}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp ? (
             <>
@@ -203,6 +232,22 @@ function AuthPage() {
             />
           </div>
 
+          {!isSignUp ? (
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => {
+                if (!email) {
+                  toast.error("Enter your email first.");
+                  return;
+                }
+                void sendReset(email);
+              }}
+            >
+              Forgot or never set a password?
+            </button>
+          ) : null}
+
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Working…" : isSignUp ? "Start 14-day trial" : "Sign in"}
           </Button>
@@ -213,7 +258,10 @@ function AuthPage() {
           <button
             type="button"
             className="text-primary underline-offset-4 hover:underline"
-            onClick={() => setIsSignUp((value) => !value)}
+            onClick={() => {
+              setClaimNotice(null);
+              setIsSignUp((value) => !value);
+            }}
           >
             {isSignUp ? "Sign in" : "Create an account"}
           </button>

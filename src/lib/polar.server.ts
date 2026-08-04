@@ -244,3 +244,41 @@ export async function listAllSubscriptions(): Promise<PolarSubscription[]> {
   }
   return out;
 }
+
+/* ------------------------------------------------------------------ */
+/* Email-keyed lookups (reconciliation + signup gating)                 */
+/* ------------------------------------------------------------------ */
+
+export type PolarCustomer = {
+  id: string;
+  email: string;
+  name?: string | null;
+  external_id?: string | null;
+};
+
+/** Finds a Polar customer by email address (case-insensitive). */
+export async function findCustomerByEmail(email: string): Promise<PolarCustomer | null> {
+  const res = await polarFetch<{ items: PolarCustomer[] }>(
+    `/customers?limit=10&email=${encodeURIComponent(email)}`,
+  );
+  const target = email.trim().toLowerCase();
+  return (res.items ?? []).find((c) => (c.email ?? "").toLowerCase() === target) ?? null;
+}
+
+/** The most relevant Polar subscription for an email, if any. */
+export async function findSubscriptionByEmail(
+  email: string,
+): Promise<PolarSubscription | null> {
+  const customer = await findCustomerByEmail(email);
+  if (!customer) return null;
+  const res = await polarFetch<{ items: PolarSubscription[] }>(
+    `/subscriptions?limit=50&customer_id=${encodeURIComponent(customer.id)}`,
+  );
+  const items = (res.items ?? []).map((s) => ({
+    ...s,
+    customer: s.customer ?? { id: customer.id, email: customer.email, external_id: customer.external_id ?? null },
+  }));
+  const rank = (s: PolarSubscription) =>
+    s.status === "active" ? 0 : s.status === "trialing" ? 1 : s.status === "past_due" ? 2 : 3;
+  return items.sort((a, b) => rank(a) - rank(b))[0] ?? null;
+}
