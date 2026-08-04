@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_webhook_events: {
+        Row: {
+          applied_row: Json | null
+          event_id: string | null
+          event_type: string
+          external_customer_id: string | null
+          id: string
+          mapped_plan: string | null
+          mapped_seats: number | null
+          mapping_source: string | null
+          matched_email: string | null
+          matched_user_id: string | null
+          notes: string | null
+          outcome: string
+          payload: Json | null
+          polar_customer_id: string | null
+          polar_product_id: string | null
+          polar_subscription_id: string | null
+          received_at: string
+          signature_valid: boolean
+        }
+        Insert: {
+          applied_row?: Json | null
+          event_id?: string | null
+          event_type: string
+          external_customer_id?: string | null
+          id?: string
+          mapped_plan?: string | null
+          mapped_seats?: number | null
+          mapping_source?: string | null
+          matched_email?: string | null
+          matched_user_id?: string | null
+          notes?: string | null
+          outcome: string
+          payload?: Json | null
+          polar_customer_id?: string | null
+          polar_product_id?: string | null
+          polar_subscription_id?: string | null
+          received_at?: string
+          signature_valid?: boolean
+        }
+        Update: {
+          applied_row?: Json | null
+          event_id?: string | null
+          event_type?: string
+          external_customer_id?: string | null
+          id?: string
+          mapped_plan?: string | null
+          mapped_seats?: number | null
+          mapping_source?: string | null
+          matched_email?: string | null
+          matched_user_id?: string | null
+          notes?: string | null
+          outcome?: string
+          payload?: Json | null
+          polar_customer_id?: string | null
+          polar_product_id?: string | null
+          polar_subscription_id?: string | null
+          received_at?: string
+          signature_valid?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -94,30 +157,42 @@ export type Database = {
       }
       team_members: {
         Row: {
+          accepted_at: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          invite_token: string | null
+          invited_at: string
+          member_user_id: string | null
           owner_id: string
           role: string
           status: string
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id?: string
+          invite_token?: string | null
+          invited_at?: string
+          member_user_id?: string | null
           owner_id: string
           role?: string
           status?: string
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          invite_token?: string | null
+          invited_at?: string
+          member_user_id?: string | null
           owner_id?: string
           role?: string
           status?: string
@@ -151,6 +226,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invite: { Args: { _token: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -158,6 +234,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      team_invite_preview: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "member"
