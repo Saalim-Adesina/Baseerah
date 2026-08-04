@@ -54,6 +54,9 @@ export type Database = {
           deals_screened_this_period: number
           id: string
           plan: string
+          polar_customer_id: string | null
+          polar_product_id: string | null
+          polar_subscription_id: string | null
           seats: number
           status: string
           updated_at: string
@@ -65,6 +68,9 @@ export type Database = {
           deals_screened_this_period?: number
           id?: string
           plan?: string
+          polar_customer_id?: string | null
+          polar_product_id?: string | null
+          polar_subscription_id?: string | null
           seats?: number
           status?: string
           updated_at?: string
@@ -76,6 +82,9 @@ export type Database = {
           deals_screened_this_period?: number
           id?: string
           plan?: string
+          polar_customer_id?: string | null
+          polar_product_id?: string | null
+          polar_subscription_id?: string | null
           seats?: number
           status?: string
           updated_at?: string
