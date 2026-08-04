@@ -72,6 +72,20 @@ export const openBillingPortal = createServerFn({ method: "POST" })
       .select("polar_customer_id")
       .eq("user_id", context.userId)
       .maybeSingle();
-    const session = await createPortalSession(context.userId, row?.polar_customer_id ?? null);
+    const email =
+      (context.claims as { email?: string } | undefined)?.email ??
+      (
+        await context.supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", context.userId)
+          .maybeSingle()
+      ).data?.email ??
+      null;
+    const session = await createPortalSession(
+      context.userId,
+      row?.polar_customer_id ?? null,
+      email,
+    );
     return { url: session.customer_portal_url };
   });

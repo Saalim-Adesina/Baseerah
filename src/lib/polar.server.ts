@@ -87,20 +87,33 @@ export function getCheckoutSession(id: string) {
 
 /**
  * Opens the customer portal. Polar rejects `external_customer_id` for team
- * customers ("member_id is required"), so fall back to the Polar customer id.
+ * customers ("member_id is required"), so prefer the Polar customer id and
+ * resolve it by email when the app row has not stored it yet.
  */
-export async function createPortalSession(externalCustomerId: string, customerId?: string | null) {
+export async function createPortalSession(
+  externalCustomerId: string,
+  customerId?: string | null,
+  email?: string | null,
+) {
+  const session = (body: Record<string, string>) =>
+    polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+  let resolvedId = customerId ?? null;
+  if (!resolvedId && email) {
+    resolvedId = (await findCustomerByEmail(email).catch(() => null))?.id ?? null;
+  }
+  if (resolvedId) return await session({ customer_id: resolvedId });
+
   try {
-    return await polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
-      method: "POST",
-      body: JSON.stringify({ external_customer_id: externalCustomerId }),
-    });
+    return await session({ external_customer_id: externalCustomerId });
   } catch (error) {
-    if (!customerId) throw error;
-    return await polarFetch<{ customer_portal_url: string }>("/customer-sessions/", {
-      method: "POST",
-      body: JSON.stringify({ customer_id: customerId }),
-    });
+    if (!email) throw error;
+    const found = await findCustomerByEmail(email).catch(() => null);
+    if (!found) throw error;
+    return await session({ customer_id: found.id });
   }
 }
 
