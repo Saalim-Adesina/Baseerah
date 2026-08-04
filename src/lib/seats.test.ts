@@ -32,9 +32,10 @@ describe("plan catalogue", () => {
 });
 
 describe("seat maths", () => {
-  it("counts the owner as a seat", () => {
-    expect(seatsUsed(0)).toBe(1);
-    expect(seatsUsed(4)).toBe(5);
+  it("counts only assigned seat rows, not the owner separately", () => {
+    expect(seatsUsed(0)).toBe(0);
+    expect(seatsUsed(1)).toBe(1);
+    expect(seatsUsed(4)).toBe(4);
   });
 
   it("never drops below the bundled seat count", () => {

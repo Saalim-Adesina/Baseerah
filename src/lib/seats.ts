@@ -5,9 +5,12 @@ export function totalSeats(plan: Plan, purchasedSeats: number | null | undefined
   return Math.max(purchasedSeats ?? 0, plan.seatsIncluded);
 }
 
-/** Seats in use: every teammate plus the account owner. */
+/**
+ * Seats in use: one per assigned seat row. The account owner is not counted
+ * separately — they occupy their own seat row (typically an admin seat).
+ */
 export function seatsUsed(memberCount: number) {
-  return memberCount + 1;
+  return memberCount;
 }
 
 /** Seats still free before the account starts paying for extras. */
