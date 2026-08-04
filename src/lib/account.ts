@@ -29,6 +29,7 @@ export type Subscription = {
   plan: string;
   status: string;
   deals_screened_this_period: number;
+  seats: number;
   current_period_end: string | null;
 };
 
@@ -71,7 +72,7 @@ export function useAccount() {
         supabase.from("profiles").select("*").eq("id", auth.user.id).maybeSingle(),
         supabase
           .from("subscriptions")
-          .select("plan,status,deals_screened_this_period,current_period_end")
+          .select("plan,status,deals_screened_this_period,seats,current_period_end")
           .eq("user_id", auth.user.id)
           .maybeSingle(),
       ]);
