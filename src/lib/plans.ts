@@ -103,7 +103,26 @@ export const PLANS: Plan[] = [
 /** Polar product for extra seats beyond a plan's bundle. */
 export const EXTRA_SEAT_PRODUCT_ID = "7afd79f7-1f49-47bb-8812-b985800c0354";
 
-/** Maps a Polar product id back to an app plan id. */
+/** Env keys holding sandbox product ids, mapped to the plan they represent. */
+const SANDBOX_PRODUCT_ENV: Record<string, Plan["id"]> = {
+  POLAR_SANDBOX_PRODUCT_ANGEL: "angel",
+  POLAR_SANDBOX_PRODUCT_SYNDICATE: "syndicate",
+  POLAR_SANDBOX_PRODUCT_INSTITUTION: "institution",
+};
+
+/**
+ * Maps a Polar product id back to an app plan id. Sandbox products have
+ * different ids than live ones, so env overrides are consulted too — without
+ * this a sandbox purchase never flips the plan on the app row.
+ */
 export function planIdFromPolarProduct(productId: string | null | undefined) {
-  return PLANS.find((p) => p.polarProductId === productId)?.id;
+  if (!productId) return undefined;
+  const direct = PLANS.find((p) => p.polarProductId === productId)?.id;
+  if (direct) return direct;
+  if (typeof process !== "undefined" && process.env) {
+    for (const [key, plan] of Object.entries(SANDBOX_PRODUCT_ENV)) {
+      if (process.env[key] === productId) return plan;
+    }
+  }
+  return undefined;
 }
