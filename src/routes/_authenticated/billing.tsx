@@ -3,7 +3,8 @@ import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PLANS } from "@/lib/plans";
+import { PLANS, planById, seatsSupported } from "@/lib/plans";
+import { TeamSeats } from "@/components/team-seats";
 import { INVESTOR_TYPES, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/_authenticated/billing")({
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/billing")({
 function Billing() {
   const { profile, subscription, loading } = useAccount();
   const typeLabel = INVESTOR_TYPES.find((t) => t.value === profile?.investor_type)?.label;
+  const currentPlan = planById(subscription?.plan);
+  const showSeats = seatsSupported(subscription?.plan);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
@@ -51,8 +54,23 @@ function Billing() {
           <p className="mt-1">
             Deals screened this period: {subscription?.deals_screened_this_period ?? 0}
           </p>
+          {showSeats ? <p>Seats: {subscription?.seats ?? currentPlan?.seatsIncluded}</p> : null}
         </div>
       </div>
+
+      {showSeats && currentPlan ? (
+        <TeamSeats plan={currentPlan} seats={subscription?.seats ?? currentPlan.seatsIncluded} />
+      ) : (
+        <div className="panel mt-8 px-6 py-5">
+          <p className="label-caps">Team seats</p>
+          <h2 className="mt-1 text-2xl">Screening with a team?</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            The Angel plan is a single-seat account. Syndicate includes 5 seats with roles for
+            analysts and backers, and Institutional comes with unlimited seats — upgrade below to
+            invite your team into the same pipeline.
+          </p>
+        </div>
+      )}
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         {PLANS.map((plan) => (
@@ -72,6 +90,13 @@ function Billing() {
             <p className="mt-4 font-display text-4xl">
               {plan.price}
               <span className="ml-1 font-sans text-xs text-muted-foreground">{plan.cadence}</span>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {plan.maxSeats === 1
+                ? "Single seat"
+                : plan.maxSeats === null
+                  ? `${plan.seatsIncluded} seats included · unlimited`
+                  : `${plan.seatsIncluded} seats included · up to ${plan.maxSeats}`}
             </p>
             <ul className="mt-5 flex-1 space-y-2 text-sm">
               {plan.features.map((feature) => (

@@ -54,6 +54,7 @@ export type Database = {
           deals_screened_this_period: number
           id: string
           plan: string
+          seats: number
           status: string
           updated_at: string
           user_id: string
@@ -64,6 +65,7 @@ export type Database = {
           deals_screened_this_period?: number
           id?: string
           plan?: string
+          seats?: number
           status?: string
           updated_at?: string
           user_id: string
@@ -74,9 +76,43 @@ export type Database = {
           deals_screened_this_period?: number
           id?: string
           plan?: string
+          seats?: number
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          owner_id: string
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          owner_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          owner_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
