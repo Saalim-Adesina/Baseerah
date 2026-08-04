@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          deal_inbox_email: string | null
+          email: string | null
+          firm_name: string | null
+          full_name: string | null
+          id: string
+          investor_type: Database["public"]["Enums"]["investor_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_inbox_email?: string | null
+          email?: string | null
+          firm_name?: string | null
+          full_name?: string | null
+          id: string
+          investor_type?: Database["public"]["Enums"]["investor_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_inbox_email?: string | null
+          email?: string | null
+          firm_name?: string | null
+          full_name?: string | null
+          id?: string
+          investor_type?: Database["public"]["Enums"]["investor_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          deals_screened_this_period: number
+          id: string
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          deals_screened_this_period?: number
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          deals_screened_this_period?: number
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +88,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      investor_type:
+        | "angel"
+        | "syndicate"
+        | "incubator"
+        | "vc"
+        | "family_office"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +220,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      investor_type: ["angel", "syndicate", "incubator", "vc", "family_office"],
+    },
   },
 } as const
