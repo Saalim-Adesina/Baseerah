@@ -18,6 +18,7 @@ import { Route as AuthenticatedThesisRouteImport } from './routes/_authenticated
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDealsDealIdRouteImport } from './routes/_authenticated/deals.$dealId'
 import { Route as AuthenticatedDealsNewRouteImport } from './routes/_authenticated/deals.new'
+import { Route as ApiPublicPolarWebhookRouteImport } from './routes/api/public/polar-webhook'
 import { Route as AuthenticatedDealsDealIdIndexRouteImport } from './routes/_authenticated/deals.$dealId.index'
 import { Route as AuthenticatedDealsDealIdChatIndexRouteImport } from './routes/_authenticated/deals.$dealId.chat.index'
 import { Route as AuthenticatedDealsDealIdChatThreadIdRouteImport } from './routes/_authenticated/deals.$dealId.chat.$threadId'
@@ -67,6 +68,11 @@ const AuthenticatedDealsNewRoute = AuthenticatedDealsNewRouteImport.update({
   path: '/deals/new',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicPolarWebhookRoute = ApiPublicPolarWebhookRouteImport.update({
+  id: '/api/public/polar-webhook',
+  path: '/api/public/polar-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDealsDealIdIndexRoute =
   AuthenticatedDealsDealIdIndexRouteImport.update({
     id: '/',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/deals/new': typeof AuthenticatedDealsNewRoute
+  '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
   '/deals/$dealId/': typeof AuthenticatedDealsDealIdIndexRoute
   '/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/deals/$dealId/chat/': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/thesis': typeof AuthenticatedThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/new': typeof AuthenticatedDealsNewRoute
+  '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdIndexRoute
   '/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/deals/$dealId/chat': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/_authenticated/deals/new': typeof AuthenticatedDealsNewRoute
+  '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
   '/_authenticated/deals/$dealId/': typeof AuthenticatedDealsDealIdIndexRoute
   '/_authenticated/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/_authenticated/deals/$dealId/chat/': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/deals/$dealId'
     | '/deals/new'
+    | '/api/public/polar-webhook'
     | '/deals/$dealId/'
     | '/deals/$dealId/chat/$threadId'
     | '/deals/$dealId/chat/'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/thesis'
     | '/api/chat'
     | '/deals/new'
+    | '/api/public/polar-webhook'
     | '/deals/$dealId'
     | '/deals/$dealId/chat/$threadId'
     | '/deals/$dealId/chat'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/_authenticated/deals/$dealId'
     | '/_authenticated/deals/new'
+    | '/api/public/polar-webhook'
     | '/_authenticated/deals/$dealId/'
     | '/_authenticated/deals/$dealId/chat/$threadId'
     | '/_authenticated/deals/$dealId/chat/'
@@ -173,6 +185,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiPublicPolarWebhookRoute: typeof ApiPublicPolarWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/deals/new'
       preLoaderRoute: typeof AuthenticatedDealsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/polar-webhook': {
+      id: '/api/public/polar-webhook'
+      path: '/api/public/polar-webhook'
+      fullPath: '/api/public/polar-webhook'
+      preLoaderRoute: typeof ApiPublicPolarWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/deals/$dealId/': {
       id: '/_authenticated/deals/$dealId/'
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiPublicPolarWebhookRoute: ApiPublicPolarWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
