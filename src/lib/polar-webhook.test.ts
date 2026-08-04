@@ -19,11 +19,11 @@ describe("polar subscription webhook mapping", () => {
     });
     expect(update).not.toBeNull();
     expect(update!.userId).toBe("user-123");
-    expect(update!.row.plan).toBe("syndicate");
-    expect(update!.row.status).toBe("active");
-    expect(update!.row.seats).toBe(8);
-    expect(update!.row.polar_subscription_id).toBe("sub_1");
-    expect(update!.row.polar_customer_id).toBe("cus_1");
+    expect(update!.row['plan']).toBe("syndicate");
+    expect(update!.row['status']).toBe("active");
+    expect(update!.row['seats']).toBe(8);
+    expect(update!.row['polar_subscription_id']).toBe("sub_1");
+    expect(update!.row['polar_customer_id']).toBe("cus_1");
   });
 
   it("downgrades to trial when the subscription is revoked", () => {
@@ -36,8 +36,8 @@ describe("polar subscription webhook mapping", () => {
         customer: { id: "cus_1", external_id: "user-123" },
       },
     });
-    expect(update!.row.plan).toBe("trial");
-    expect(update!.row.status).toBe("canceled");
+    expect(update!.row['plan']).toBe("trial");
+    expect(update!.row['status']).toBe("canceled");
   });
 
   it("falls back to metadata for the user id", () => {
@@ -59,6 +59,6 @@ describe("polar subscription webhook mapping", () => {
       type: "subscription.active",
       data: { id: "s", status: "active", metadata: { user_id: "u", seats: "lots" } },
     });
-    expect(update!.row.seats).toBeUndefined();
+    expect(update!.row['seats']).toBeUndefined();
   });
 });
