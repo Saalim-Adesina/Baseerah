@@ -96,13 +96,19 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
 
   async function changeRole(id: string, next: string) {
     const { error } = await supabase.from("team_members").update({ role: next }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setMembers((m) => m.map((x) => (x.id === id ? { ...x, role: next } : x)));
   }
 
   async function remove(id: string) {
     const { error } = await supabase.from("team_members").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setMembers((m) => m.filter((x) => x.id !== id));
     toast.success("Seat released.");
   }
