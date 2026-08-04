@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedThesisRouteImport } from './routes/_authenticated/thesis'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDealsDealIdRouteImport } from './routes/_authenticated/deals.$dealId'
@@ -27,6 +29,16 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedThesisRoute = AuthenticatedThesisRouteImport.update({
   id: '/thesis',
@@ -70,6 +82,8 @@ const AuthenticatedDealsDealIdChatThreadIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
   '/thesis': typeof AuthenticatedThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
@@ -80,6 +94,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
   '/thesis': typeof AuthenticatedThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/deals/new': typeof AuthenticatedDealsNewRoute
@@ -91,6 +107,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/thesis': typeof AuthenticatedThesisRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
@@ -103,6 +121,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/pipeline'
     | '/thesis'
     | '/api/chat'
     | '/deals/$dealId'
@@ -113,6 +133,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
+    | '/pipeline'
     | '/thesis'
     | '/api/chat'
     | '/deals/new'
@@ -123,6 +145,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/pipeline'
     | '/_authenticated/thesis'
     | '/api/chat'
     | '/_authenticated/deals/$dealId'
@@ -135,6 +159,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -153,6 +178,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/pipeline': {
+      id: '/_authenticated/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/thesis': {
       id: '/_authenticated/thesis'
@@ -227,12 +266,14 @@ const AuthenticatedDealsDealIdRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedThesisRoute: typeof AuthenticatedThesisRoute
   AuthenticatedDealsDealIdRoute: typeof AuthenticatedDealsDealIdRouteWithChildren
   AuthenticatedDealsNewRoute: typeof AuthenticatedDealsNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedThesisRoute: AuthenticatedThesisRoute,
   AuthenticatedDealsDealIdRoute: AuthenticatedDealsDealIdRouteWithChildren,
   AuthenticatedDealsNewRoute: AuthenticatedDealsNewRoute,
@@ -244,6 +285,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
