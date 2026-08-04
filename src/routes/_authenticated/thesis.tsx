@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { getThesis, saveThesis, useHydrated, useStoreValue } from "@/lib/store";
 import { DEFAULT_THESIS, METRIC_KEYS, type Thesis } from "@/lib/types";
 
-export const Route = createFileRoute("/thesis")({
+export const Route = createFileRoute("/_authenticated/thesis")({
   head: () => ({
     meta: [
       { title: "Investment thesis — Meridian Screening" },

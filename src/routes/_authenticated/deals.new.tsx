@@ -17,7 +17,7 @@ import { extractDocument } from "@/lib/deal-ai.functions";
 import { saveDeal, uid } from "@/lib/store";
 import { ROUNDS, type Deal, type Founder, type Round } from "@/lib/types";
 
-export const Route = createFileRoute("/deals/new")({
+export const Route = createFileRoute("/_authenticated/deals/new")({
   head: () => ({
     meta: [
       { title: "Add a deal — Meridian Investment Screening" },

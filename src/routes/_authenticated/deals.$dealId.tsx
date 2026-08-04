@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { getDeal, useHydrated, useStoreValue } from "@/lib/store";
 import { ScoreRing } from "@/components/score";
 
-export const Route = createFileRoute("/deals/$dealId")({
+export const Route = createFileRoute("/_authenticated/deals/$dealId")({
   head: () => ({
     meta: [
       { title: "Deal analysis — Meridian Investment Screening" },

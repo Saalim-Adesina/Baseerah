@@ -1,0 +1,229 @@
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
+
+export const Route = createFileRoute("/auth")({
+  head: () => ({
+    meta: [
+      { title: "Create your angel investor account — Meridian" },
+      {
+        name: "description",
+        content:
+          "Sign up to screen your angel deal inbox: forward decks, get thesis-scored triage and pass the rest politely.",
+      },
+      { property: "og:title", content: "Create your angel investor account — Meridian" },
+      {
+        property: "og:description",
+        content: "Screen hundreds of inbound decks a month against your personal angel thesis.",
+      },
+    ],
+  }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search['mode'] === "signin" ? ("signin" as const) : ("signup" as const),
+  }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const { mode } = useSearch({ from: "/auth" });
+  const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(mode !== "signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [firmName, setFirmName] = useState("");
+  const [investorType, setInvestorType] = useState<InvestorType>("angel");
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName, firm_name: firmName, investor_type: investorType },
+          },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          toast.success("Check your email to confirm your account.");
+          return;
+        }
+        toast.success("Welcome aboard.");
+        navigate({ to: "/pipeline" });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate({ to: "/pipeline" });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Authentication failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleGoogle() {
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast.error("Google sign-in failed");
+      return;
+    }
+    if (result.redirected) return;
+    navigate({ to: "/pipeline" });
+  }
+
+  return (
+    <main className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-[1.1fr_1fr]">
+      <section className="hidden lg:block">
+        <p className="label-caps">For angel investors</p>
+        <h1 className="mt-2 text-4xl leading-tight">
+          Your inbox is the deal flow. Let it filter itself.
+        </h1>
+        <p className="mt-4 max-w-md text-sm text-muted-foreground">
+          Angels see more deals than any fund and have the least time. Forward every deck to your
+          private screening address and wake up to a ranked shortlist, scored against your own
+          thesis — people first.
+        </p>
+        <ul className="mt-8 space-y-3 text-sm">
+          {[
+            "One private inbox address for all inbound decks",
+            "Hundreds of deals triaged per month, no analyst needed",
+            "Founder-quality read from LinkedIn, meeting notes and your own biases",
+            "Polite, on-brand pass emails written for you",
+          ].map((item) => (
+            <li key={item} className="panel px-4 py-3">
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="panel px-6 py-7">
+        <h2 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isSignUp
+            ? "14-day trial. Screen your first 25 deals before you pay a cent."
+            : "Sign in to your screening desk."}
+        </p>
+
+        <Button variant="outline" className="mt-6 w-full" onClick={handleGoogle} type="button">
+          Continue with Google
+        </Button>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">Your name</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Jane Okafor"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="firmName">Fund / entity name (optional)</Label>
+                <Input
+                  id="firmName"
+                  value={firmName}
+                  onChange={(e) => setFirmName(e.target.value)}
+                  placeholder="Okafor Angel Capital"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>How do you invest?</Label>
+                <div className="grid gap-2">
+                  {INVESTOR_TYPES.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setInvestorType(option.value)}
+                      className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                        investorType === option.value
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        {option.label}
+                        {option.value === "angel" ? (
+                          <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+                            Recommended
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {option.blurb}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@yourfund.com"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={busy}>
+            {busy ? "Working…" : isSignUp ? "Start 14-day trial" : "Sign in"}
+          </Button>
+        </form>
+
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          {isSignUp ? "Already screening with Meridian?" : "New here?"}{" "}
+          <button
+            type="button"
+            className="text-primary underline-offset-4 hover:underline"
+            onClick={() => setIsSignUp((value) => !value)}
+          >
+            {isSignUp ? "Sign in" : "Create an account"}
+          </button>
+        </p>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          <Link to="/" className="hover:underline">
+            Back to overview
+          </Link>
+        </p>
+      </section>
+    </main>
+  );
+}

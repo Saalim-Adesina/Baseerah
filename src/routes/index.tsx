@@ -1,173 +1,172 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
-import { Plus, Search, Trash2, Sparkles } from "lucide-react";
+import { Check, Inbox, Mail, ScanLine, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { deleteDeal, getDeals, useHydrated, useStoreValue } from "@/lib/store";
-import { ScoreRing } from "@/components/score";
-import type { Deal } from "@/lib/types";
+import { PLANS } from "@/lib/plans";
+import { INVESTOR_TYPES } from "@/lib/account";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Deal Pipeline — Meridian Investment Screening" },
+      { title: "Meridian — Deal Screening for Angel Investors" },
       {
         name: "description",
         content:
-          "Screen, score and triage startup deals against your investment thesis. Upload a deck, get metric-level scores, IC memos and founder questions.",
+          "Angels get more decks than any fund and have the least time. Forward your inbox to Meridian and get every deal scored against your own thesis, people first.",
       },
-      { property: "og:title", content: "Deal Pipeline — Meridian Investment Screening" },
+      { property: "og:title", content: "Meridian — Deal Screening for Angel Investors" },
       {
         property: "og:description",
         content:
-          "Thesis-driven automated screening for VCs, incubators and private equity funds.",
+          "Forward your deal inbox and wake up to a ranked shortlist, scored against your angel thesis.",
       },
     ],
   }),
-  component: Pipeline,
+  component: Landing,
 });
 
-const STATUS_STYLE: Record<Deal["status"], string> = {
-  new: "bg-secondary text-secondary-foreground",
-  analyzed: "bg-primary/15 text-primary",
-  shortlist: "bg-[var(--signal-strong)]/15 text-[var(--signal-strong)]",
-  passed: "bg-[var(--signal-weak)]/15 text-[var(--signal-weak)]",
-};
-
-function Pipeline() {
-  const hydrated = useHydrated();
-  const selector = useCallback(() => getDeals(), []);
-  const deals = useStoreValue(selector);
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return deals;
-    return deals.filter((deal) =>
-      [deal.company, deal.sector, deal.oneLiner, deal.round]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [deals, query]);
-
-  const stats = useMemo(() => {
-    const scored = deals.filter((d) => d.analysis);
-    const avg = scored.length
-      ? Math.round(
-          scored.reduce((sum, d) => sum + (d.analysis?.overallScore ?? 0), 0) / scored.length,
-        )
-      : 0;
-    return {
-      total: deals.length,
-      scored: scored.length,
-      shortlist: deals.filter((d) => d.status === "shortlist").length,
-      avg,
-    };
-  }, [deals]);
-
+function Landing() {
   return (
-    <main className="mx-auto max-w-7xl px-5 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="label-caps">Screening desk</p>
-          <h1 className="mt-1 text-4xl">Deal pipeline</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Every deal is scored against your thesis, calibrated to its round stage, and judged
-            on the people first.
-          </p>
+    <main>
+      <section className="mx-auto max-w-5xl px-5 pb-14 pt-20 text-center">
+        <p className="label-caps">Built for angel investors</p>
+        <h1 className="mx-auto mt-3 max-w-3xl text-5xl leading-[1.05] md:text-6xl">
+          Screen your deal inbox instead of drowning in it.
+        </h1>
+        <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground">
+          You see hundreds of decks a month, from warm intros, demo days and total strangers — with
+          no analyst and no time. Forward them to your private Meridian address and every deal comes
+          back scored against your own thesis, judged on the founders first.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button asChild size="lg">
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Create your angel account
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/auth" search={{ mode: "signin" }}>
+              Sign in
+            </Link>
+          </Button>
         </div>
-        <Button asChild size="lg">
-          <Link to="/deals/new">
-            <Plus className="mr-1 h-4 w-4" /> Add deal
-          </Link>
-        </Button>
-      </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          14-day trial · card only needed when you subscribe
+        </p>
+      </section>
 
-      <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="mx-auto grid max-w-6xl gap-3 px-5 pb-16 md:grid-cols-4">
         {[
-          { label: "Deals in pipeline", value: stats.total },
-          { label: "Screened", value: stats.scored },
-          { label: "Shortlisted", value: stats.shortlist },
-          { label: "Avg. score", value: stats.avg || "—" },
-        ].map((stat) => (
-          <div key={stat.label} className="panel px-4 py-3">
-            <p className="label-caps">{stat.label}</p>
-            <p className="mt-1 font-display text-3xl">{stat.value}</p>
+          {
+            icon: Inbox,
+            title: "One inbox address",
+            body: "Forward or auto-forward every inbound deck to your private screening address.",
+          },
+          {
+            icon: ScanLine,
+            title: "Filtered at volume",
+            body: "Hundreds of deals a month triaged into shortlist, track and pass.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "People first",
+            body: "LinkedIn, meeting notes and your own biases weighted above deck claims.",
+          },
+          {
+            icon: Mail,
+            title: "Graceful passes",
+            body: "A written, on-brand pass email for every deal you decline.",
+          },
+        ].map((item) => (
+          <div key={item.title} className="panel px-5 py-5 text-left">
+            <item.icon className="h-5 w-5 text-primary" />
+            <h2 className="mt-3 text-lg">{item.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
           </div>
         ))}
-      </div>
+      </section>
 
-      <div className="relative mt-8 max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search company, sector, round…"
-          className="pl-9"
-        />
-      </div>
+      <section className="border-y border-border/70 bg-secondary/30 py-16">
+        <div className="mx-auto max-w-6xl px-5">
+          <p className="label-caps">Pricing</p>
+          <h2 className="mt-1 text-4xl">Angel-first pricing</h2>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Start on the Angel plan — it is the one built for a solo cheque writer screening their
+            own inbox. Syndicates, incubators, venture funds and family offices can scale up when
+            they need the volume.
+          </p>
 
-      <div className="mt-5 space-y-3">
-        {!hydrated ? null : filtered.length === 0 ? (
-          <div className="panel flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h2 className="text-xl">No deals yet</h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              Upload a deck and the founder context, and the screener will score it against your
-              thesis in one pass.
-            </p>
-            <Button asChild className="mt-2">
-              <Link to="/deals/new">Add your first deal</Link>
-            </Button>
-          </div>
-        ) : (
-          filtered.map((deal) => (
-            <Link
-              key={deal.id}
-              to="/deals/$dealId"
-              params={{ dealId: deal.id }}
-              className="panel flex items-center gap-5 px-5 py-4 transition-colors hover:border-primary/50"
-            >
-              <ScoreRing value={deal.analysis?.overallScore ?? 0} size={64} />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-xl leading-tight">{deal.company}</h2>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    {deal.round}
-                  </Badge>
-                  <span
-                    className={`rounded px-2 py-0.5 text-[10px] uppercase tracking-wider ${STATUS_STYLE[deal.status]}`}
-                  >
-                    {deal.status}
-                  </span>
-                  {deal.analysis ? (
-                    <span className="text-xs text-muted-foreground">
-                      · {deal.analysis.recommendation}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {deal.oneLiner || deal.sector || "No summary provided"}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label={`Delete ${deal.company}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  deleteDeal(deal.id);
-                }}
-                className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`panel flex flex-col px-6 py-6 ${
+                  plan.highlight ? "border-primary shadow-lg ring-1 ring-primary/40" : ""
+                }`}
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
+                {plan.highlight ? (
+                  <span className="mb-3 w-fit rounded bg-primary px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary-foreground">
+                    Most popular for angels
+                  </span>
+                ) : null}
+                <h3 className="text-2xl">{plan.name}</h3>
+                <p className="text-xs text-muted-foreground">{plan.audience}</p>
+                <p className="mt-4 font-display text-4xl">
+                  {plan.price}
+                  <span className="ml-1 font-sans text-xs text-muted-foreground">
+                    {plan.cadence}
+                  </span>
+                </p>
+                <ul className="mt-5 flex-1 space-y-2 text-sm">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  asChild
+                  className="mt-6"
+                  variant={plan.highlight ? "default" : "outline"}
+                >
+                  <Link to="/auth" search={{ mode: "signup" }}>
+                    {plan.id === "institution" ? "Talk to us" : `Start with ${plan.name}`}
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <p className="label-caps">Who screens with Meridian</p>
+        <h2 className="mt-1 text-3xl">Angels first — everyone else welcome</h2>
+        <div className="mt-6 grid gap-3 md:grid-cols-5">
+          {INVESTOR_TYPES.map((type) => (
+            <div
+              key={type.value}
+              className={`panel px-4 py-4 ${type.value === "angel" ? "border-primary" : ""}`}
+            >
+              <h3 className="text-base">{type.label}</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{type.blurb}</p>
+            </div>
+          ))}
+        </div>
+        <div className="panel mt-10 flex flex-wrap items-center justify-between gap-4 px-6 py-6">
+          <div>
+            <h2 className="text-2xl">Ready to filter your deal flow?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create an account, set your thesis in plain English, start forwarding decks.
+            </p>
+          </div>
+          <Button asChild size="lg">
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Create your account
             </Link>
-          ))
-        )}
-      </div>
+          </Button>
+        </div>
+      </section>
     </main>
   );
 }

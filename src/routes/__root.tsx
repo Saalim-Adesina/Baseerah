@@ -1,14 +1,17 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/lib/account";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -119,6 +122,20 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function TopNav() {
+  const { user, loading } = useSession();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", search: { mode: "signin" }, replace: true });
+  }
+
+  const linkClass =
+    "rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground";
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
@@ -128,27 +145,42 @@ function TopNav() {
           </span>
           <span className="font-display text-lg tracking-tight">Meridian</span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
-          <Link
-            to="/"
-            activeOptions={{ exact: true }}
-            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-          >
-            Pipeline
-          </Link>
-          <Link
-            to="/deals/new"
-            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-          >
-            New deal
-          </Link>
-          <Link
-            to="/thesis"
-            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
-          >
-            Thesis
-          </Link>
+        <nav className="flex flex-1 items-center gap-1 text-sm">
+          {user ? (
+            <>
+              <Link to="/pipeline" className={linkClass}>
+                Pipeline
+              </Link>
+              <Link to="/deals/new" className={linkClass}>
+                New deal
+              </Link>
+              <Link to="/thesis" className={linkClass}>
+                Thesis
+              </Link>
+              <Link to="/billing" className={linkClass}>
+                Plan
+              </Link>
+            </>
+          ) : null}
         </nav>
+        {loading ? null : user ? (
+          <button type="button" onClick={handleSignOut} className={linkClass}>
+            Sign out
+          </button>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Link to="/auth" search={{ mode: "signin" }} className={linkClass}>
+              Sign in
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Create account
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );
@@ -156,6 +188,18 @@ function TopNav() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      router.invalidate();
+      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+    });
+    return () => data.subscription.unsubscribe();
+  }, [router, queryClient]);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>
