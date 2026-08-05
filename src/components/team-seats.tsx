@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Copy, Loader2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,18 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SEAT_ROLES, type Plan, type SeatRole } from "@/lib/plans";
-import { atSeatLimit, overageSeats, seatsUsed, totalSeats } from "@/lib/seats";
-
-type Member = {
-  id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-  status: string;
-  created_at: string;
-  invite_token: string | null;
-  accepted_at: string | null;
-};
+import { overageSeats, totalSeats } from "@/lib/seats";
+import {
+  assignSeat,
+  getMySeats,
+  removeSeat,
+  updateSeatRole,
+  type SeatRow,
+} from "@/lib/seats.functions";
 
 const inviteSchema = z.object({
   email: z.string().trim().email("Enter a valid work email").max(255),
@@ -34,31 +30,37 @@ const inviteSchema = z.object({
 });
 
 export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
-  const [members, setMembers] = useState<Member[]>([]);
+  const load = useServerFn(getMySeats);
+  const add = useServerFn(assignSeat);
+  const setRoleFn = useServerFn(updateSeatRole);
+  const release = useServerFn(removeSeat);
+
+  const [members, setMembers] = useState<SeatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<SeatRole>("analyst");
 
-  const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("team_members")
-      .select("id,email,full_name,role,status,created_at,invite_token,accepted_at")
-      .order("created_at", { ascending: true });
-    if (error) toast.error(error.message);
-    setMembers((data as Member[] | null) ?? []);
+  const refresh = useCallback(async () => {
+    try {
+      const res = await load();
+      setMembers(res.seats);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load seats");
+    }
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    void load();
   }, [load]);
 
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
   const total = totalSeats(plan, seats);
-  const used = seatsUsed(members.length);
-  const atLimit = atSeatLimit(plan, members.length);
-  const overage = overageSeats(plan, seats, members.length);
+  const used = members.length;
+  const ceiling = plan.maxSeats;
+  const atLimit = ceiling !== null && used >= ceiling;
+  const overage = overageSeats(plan, seats, used);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -67,53 +69,36 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
       toast.error(parsed.error.issues[0]?.message ?? "Invalid invite");
       return;
     }
-    if (atLimit) {
-      toast.error(`Your plan is capped at ${plan.maxSeats} seats.`);
-      return;
-    }
     setBusy(true);
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) {
-      setBusy(false);
-      return;
+    try {
+      const res = await add({ data: parsed.data });
+      setMembers(res.seats);
+      setEmail("");
+      setName("");
+      toast.success("Seat assigned — share the invite link so they can join.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not assign that seat");
     }
-    const { error } = await supabase.from("team_members").insert({
-      owner_id: auth.user.id,
-      email: parsed.data.email.toLowerCase(),
-      full_name: parsed.data.full_name ?? null,
-      role: parsed.data.role,
-      status: "invited",
-    });
     setBusy(false);
-    if (error) {
-      toast.error(
-        error.code === "23505" ? "That teammate already has a seat." : error.message,
-      );
-      return;
-    }
-    setEmail("");
-    setName("");
-    toast.success("Seat assigned — share the invite link so they can join.");
-    void load();
   }
 
   async function changeRole(id: string, next: string) {
-    const { error } = await supabase.from("team_members").update({ role: next }).eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const res = await setRoleFn({ data: { id, role: next as SeatRole } });
+      setMembers(res.seats);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not change that role");
     }
-    setMembers((m) => m.map((x) => (x.id === id ? { ...x, role: next } : x)));
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("team_members").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const res = await release({ data: { id } });
+      setMembers(res.seats);
+      toast.success("Seat released.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not release that seat");
     }
-    setMembers((m) => m.filter((x) => x.id !== id));
-    toast.success("Seat released.");
   }
 
   async function copyInvite(token: string | null) {
@@ -136,14 +121,15 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
         <div>
           <p className="label-caps">Team seats</p>
           <h2 className="mt-1 text-2xl">
-            {used} of {plan.maxSeats === null ? "unlimited" : total} seats used
+            {used} of {ceiling === null ? "unlimited" : total} seats used
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {plan.name} includes {plan.seatsIncluded} seats
             {plan.extraSeatPrice && plan.extraSeatPrice !== "Included"
               ? ` — extra seats are ${plan.extraSeatPrice}`
               : ""}
-            . Each teammate gets their own login into the shared pipeline.
+            . Your own admin seat is the first one listed; every other teammate gets their own
+            login into the shared pipeline.
           </p>
         </div>
         {overage > 0 ? (
@@ -181,39 +167,30 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
           </SelectContent>
         </Select>
         <Button type="submit" disabled={busy || atLimit}>
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <UserPlus className="h-4 w-4" />
-          )}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
           Assign seat
         </Button>
       </form>
 
       <div className="mt-6 divide-y divide-border/70 border-t border-border/70">
-        <div className="flex items-center justify-between py-3">
-          <div>
-            <p className="text-sm">You (account owner)</p>
-            <p className="text-xs text-muted-foreground">
-              Billing, thesis and full pipeline access — the owner login isn&apos;t counted twice;
-              your seat is the admin seat listed below.
-            </p>
-          </div>
-          <Badge variant="secondary">Owner</Badge>
-        </div>
-
-
         {loading ? (
           <p className="py-4 text-sm text-muted-foreground">Loading seats…</p>
         ) : members.length === 0 ? (
           <p className="py-4 text-sm text-muted-foreground">
-            No teammates yet — assign a seat to bring your analysts into the same deal flow.
+            No seats yet — reload to create your owner admin seat.
           </p>
         ) : (
           members.map((m) => (
             <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div>
-                <p className="text-sm">{m.full_name || m.email}</p>
+                <p className="text-sm">
+                  {m.full_name || m.email}
+                  {m.is_owner ? (
+                    <Badge variant="secondary" className="ml-2">
+                      Owner
+                    </Badge>
+                  ) : null}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {m.email} ·{" "}
                   {m.accepted_at
@@ -222,7 +199,11 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Select value={m.role} onValueChange={(v) => void changeRole(m.id, v)}>
+                <Select
+                  value={m.role}
+                  onValueChange={(v) => void changeRole(m.id, v)}
+                  disabled={m.is_owner}
+                >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -245,26 +226,20 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
                     Invite link
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${m.email}`}
-                  onClick={() => void remove(m.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {m.is_owner ? null : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${m.email}`}
+                    onClick={() => void remove(m.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           ))
         )}
-      </div>
-
-      <div className="mt-5 grid gap-2 md:grid-cols-3">
-        {SEAT_ROLES.map((r) => (
-          <p key={r.value} className="text-xs text-muted-foreground">
-            <span className="text-foreground">{r.label}</span> — {r.blurb}
-          </p>
-        ))}
       </div>
     </section>
   );
