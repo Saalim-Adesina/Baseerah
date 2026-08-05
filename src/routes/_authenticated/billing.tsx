@@ -170,12 +170,21 @@ function Billing() {
               seat changes applied.
             </p>
           </div>
-          <Link
-            to="/webhook-audit"
-            className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
-          >
-            Billing webhook audit
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/admin"
+              className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Accounts &amp; subscriptions
+            </Link>
+            <Link
+              to="/webhook-audit"
+              className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Billing webhook audit
+            </Link>
+          </div>
+
         </div>
       ) : null}
 

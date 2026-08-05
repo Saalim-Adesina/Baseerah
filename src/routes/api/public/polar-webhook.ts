@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Webhook } from "standardwebhooks";
-import { planById, planIdFromPolarProduct } from "@/lib/plans";
+import { planById } from "@/lib/plans";
+import {
+  appStatusFor,
+  isExtraSeatMetadata,
+  isExtraSeatProduct,
+  planForProduct,
+  seatsForPlan,
+} from "@/lib/billing-rules";
 
 type PolarEvent = {
   type: string;
@@ -17,6 +24,10 @@ export type MappingDecision = {
   customerId: string | null;
   externalCustomerId: string | null;
   revoked: boolean;
+  /** Extra-seat purchases only add seats; they never change the plan. */
+  extraSeat: boolean;
+  /** Seats bought on an extra-seat subscription. */
+  extraSeatQuantity: number;
   row: Record<string, unknown>;
   notes: string;
 };
@@ -33,6 +44,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   const d = event.data as {
     id?: string;
     status?: string;
+    quantity?: number;
     product_id?: string;
     product?: { id?: string } | null;
     current_period_end?: string | null;
@@ -44,7 +56,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   const productId = d.product_id ?? d.product?.id ?? null;
   // Product id first; checkout metadata is the fallback when the product isn't
   // mapped (e.g. a sandbox product id we don't know about).
-  const fromProduct = planIdFromPolarProduct(productId);
+  const fromProduct = planForProduct(productId);
   const metaPlan = d.metadata?.["plan"];
   const fromMeta = metaPlan && planById(metaPlan) ? metaPlan : undefined;
   const planId = fromProduct ?? fromMeta;
@@ -63,11 +75,39 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
         ? planById(planId)?.seatsIncluded
         : undefined;
 
+  // Standalone extra-seat subscriptions must not clobber the account's plan or
+  // its main subscription link — they only move the seat count.
+  const extraSeat = isExtraSeatProduct(productId) || isExtraSeatMetadata(d.metadata);
+  const extraSeatQuantity = Math.max(
+    Number(d.quantity ?? d.metadata?.["quantity"] ?? metaSeats ?? 1) || 1,
+    1,
+  );
+
+  if (extraSeat) {
+    return {
+      userId,
+      seats: extraSeatQuantity,
+      mappingSource: "product_id",
+      productId,
+      subscriptionId: d.id ?? null,
+      customerId: d.customer?.id ?? null,
+      externalCustomerId: d.customer?.external_id ?? null,
+      revoked,
+      extraSeat: true,
+      extraSeatQuantity,
+      // Seats are resolved against the live row in the handler.
+      row: { polar_customer_id: d.customer?.id ?? null },
+      notes: revoked
+        ? `Extra-seat subscription ended — ${extraSeatQuantity} seat(s) removed. Plan untouched.`
+        : `Extra-seat purchase of ${extraSeatQuantity} seat(s). Plan and main subscription link untouched.`,
+    };
+  }
+
   const row = {
     ...(planId && !revoked ? { plan: planId } : {}),
     ...(revoked
       ? { plan: "trial", status: "canceled", seats: 1 }
-      : { status: d.status ?? "active" }),
+      : { status: appStatusFor(d.status) }),
     ...(!revoked && seats ? { seats } : {}),
     polar_subscription_id: d.id ?? null,
     polar_product_id: productId,
@@ -95,10 +135,14 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
     customerId: d.customer?.id ?? null,
     externalCustomerId: d.customer?.external_id ?? null,
     revoked,
+    extraSeat: false,
+    extraSeatQuantity: 0,
     row,
     notes,
   };
 }
+
+
 
 export const Route = createFileRoute("/api/public/polar-webhook")({
   server: {
@@ -179,10 +223,33 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           .maybeSingle();
         matchedEmail = (profile as { email?: string } | null)?.email ?? null;
 
+        // Extra-seat subscriptions add to (or remove from) the seat count on
+        // top of the plan bundle, leaving plan and links alone.
+        let appliedRow: Record<string, unknown> = decision.row;
+        if (decision.extraSeat) {
+          const { data: current } = await supabaseAdmin
+            .from("subscriptions")
+            .select("plan, seats")
+            .eq("user_id", decision.userId)
+            .maybeSingle();
+          const plan = (current as { plan?: string } | null)?.plan ?? "trial";
+          const currentSeats = (current as { seats?: number } | null)?.seats ?? 1;
+          const bundled = planById(plan)?.seatsIncluded ?? 1;
+          const extraNow = Math.max(currentSeats - bundled, 0);
+          const nextExtra = decision.revoked
+            ? Math.max(extraNow - decision.extraSeatQuantity, 0)
+            : extraNow + decision.extraSeatQuantity;
+          appliedRow = {
+            ...decision.row,
+            seats: seatsForPlan(plan, nextExtra),
+          };
+        }
+
         const { error } = await supabaseAdmin
           .from("subscriptions")
-          .update(decision.row as never)
+          .update(appliedRow as never)
           .eq("user_id", decision.userId);
+
 
         if (error) {
           console.error("Failed to apply Polar subscription update", error.message);
@@ -191,7 +258,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
             matched_email: matchedEmail,
             outcome: "error",
             notes: `${decision.notes} Update failed: ${error.message}`,
-            applied_row: decision.row,
+            applied_row: appliedRow,
           });
           return new Response("Update failed", { status: 500 });
         }
@@ -201,7 +268,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           matched_email: matchedEmail,
           outcome: "applied",
           notes: decision.notes,
-          applied_row: decision.row,
+          applied_row: appliedRow,
         });
         return new Response("ok");
       },

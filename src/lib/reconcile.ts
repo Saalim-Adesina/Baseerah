@@ -1,4 +1,8 @@
-import { planIdFromPolarProduct } from "@/lib/plans";
+import {
+  ACTIVE_POLAR_STATUSES,
+  appStatusFor as statusRule,
+  planForProduct,
+} from "@/lib/billing-rules";
 
 /** A subscription as returned by the Polar API, flattened to what we compare. */
 export type PolarSubRecord = {
@@ -54,21 +58,17 @@ export type ReconcileReport = {
   items: ReconcileItem[];
 };
 
-const ACTIVE_POLAR = new Set(["active", "trialing", "past_due"]);
+const ACTIVE_POLAR = ACTIVE_POLAR_STATUSES;
 
-/** Polar status -> the status we store on the app row. */
+/** Polar status -> the status we store on the app row (shared rulebook). */
 export function appStatusFor(polarStatus: string) {
-  if (polarStatus === "canceled" || polarStatus === "revoked" || polarStatus === "unpaid")
-    return "canceled";
-  if (polarStatus === "trialing") return "trialing";
-  if (polarStatus === "past_due") return "past_due";
-  return "active";
+  return statusRule(polarStatus);
 }
 
 /** Plan the app row should carry for this Polar subscription. */
 export function expectedPlan(sub: PolarSubRecord) {
   if (!ACTIVE_POLAR.has(sub.status)) return "trial";
-  return planIdFromPolarProduct(sub.productId) ?? null;
+  return planForProduct(sub.productId);
 }
 
 function sameInstant(a: string | null, b: string | null) {

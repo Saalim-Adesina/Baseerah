@@ -116,6 +116,8 @@ export type Database = {
           current_period_end: string | null
           deals_screened_this_period: number
           id: string
+          manual_override_at: string | null
+          override_reason: string | null
           plan: string
           polar_customer_id: string | null
           polar_product_id: string | null
@@ -130,6 +132,8 @@ export type Database = {
           current_period_end?: string | null
           deals_screened_this_period?: number
           id?: string
+          manual_override_at?: string | null
+          override_reason?: string | null
           plan?: string
           polar_customer_id?: string | null
           polar_product_id?: string | null
@@ -144,6 +148,8 @@ export type Database = {
           current_period_end?: string | null
           deals_screened_this_period?: number
           id?: string
+          manual_override_at?: string | null
+          override_reason?: string | null
           plan?: string
           polar_customer_id?: string | null
           polar_product_id?: string | null
