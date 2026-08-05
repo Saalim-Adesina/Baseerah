@@ -57,7 +57,7 @@ function AdminPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await load({ data: {} });
+      const res = await load();
       setOrgs(res.orgs);
       setSummary(res.summary as unknown as Record<string, number>);
       setDenied(null);
@@ -111,7 +111,7 @@ function AdminPage() {
           <Button
             onClick={async () => {
               try {
-                const res = await backfill({ data: {} });
+                const res = await backfill();
                 toast.success(`Created ${res.created} missing owner seats.`);
                 void refresh();
               } catch (error) {
