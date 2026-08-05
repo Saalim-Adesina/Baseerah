@@ -271,7 +271,13 @@ function AuthPage() {
           ) : null}
 
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Working…" : isSignUp ? "Start 14-day trial" : "Sign in"}
+            {busy
+              ? "Working…"
+              : isSignUp
+                ? investorType === "angel"
+                  ? "Start 14-day trial"
+                  : "Create account"
+                : "Sign in"}
           </Button>
         </form>
 
