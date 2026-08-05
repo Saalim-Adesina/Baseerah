@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,13 @@ function AuthPage() {
   const { mode } = useSearch({ from: "/auth" });
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(mode !== "signin");
+
+  // The header links to /auth?mode=signin and /auth?mode=signup. When the page
+  // is already mounted, the search param change must drive the form.
+  useEffect(() => {
+    setIsSignUp(mode !== "signin");
+    setClaimNotice(null);
+  }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
