@@ -218,12 +218,14 @@ function OrgCard({
   onToggle,
   onSave,
   onDelete,
+  onClearSubscription,
 }: {
   org: OrgRow;
   open: boolean;
   onToggle: () => void;
   onSave: (input: EditInput) => Promise<void>;
   onDelete: (confirmEmail: string) => Promise<void>;
+  onClearSubscription: (reason: string) => Promise<void>;
 }) {
   const [plan, setPlan] = useState(org.plan);
   const [status, setStatus] = useState(org.status);
@@ -234,6 +236,7 @@ function OrgCard({
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   return (
     <section className="panel px-5 py-4">
