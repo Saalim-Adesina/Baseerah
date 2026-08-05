@@ -360,11 +360,38 @@ function OrgCard({
           </label>
           <div className="md:col-span-2">
             <Button type="submit" disabled={busy}>
+          <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+            <Button type="submit" disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save subscription
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={clearing}
+              onClick={async () => {
+                setClearing(true);
+                try {
+                  await onClearSubscription(reason.trim() || "Subscription removed by superadmin");
+                  setPlan("trial");
+                  setStatus("canceled");
+                  setSeats("1");
+                  setSubscriptionId("");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not remove plan");
+                }
+                setClearing(false);
+              }}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Delete subscription
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Removes the plan, seats and Polar subscription link. The account, its Polar customer
+              and any admin role are kept — safe to run on your own superadmin account.
+            </span>
           </div>
         </form>
       ) : null}
+
 
       {open ? (
         <div className="mt-4 grid gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 md:grid-cols-[1fr_auto] md:items-end">
