@@ -93,6 +93,8 @@ Risk to watch: this page can write to any account, so all mutations live in one 
 | OAuth signup gate | Small | Medium — sits in the sign-in path, so a bug blocks logins; guarded to fail open on lookup errors |
 | Reconciliation + seat checks | Medium | Low — reporting first, fixes are explicit actions |
 | Backfill of existing records | Small | Medium — writes to live rows; runs as a reported dry run first, then applies |
+| Superadmin dashboard | Medium | Medium-high — can write to any account, so it ships behind one server-side admin gate, rule-checked mutations, and full audit logging |
+
 
 Overall: a solid but contained piece of work. Most of it is consolidation of logic that already exists. The two parts that genuinely change behaviour are server-side seat enforcement and the extra-seat webhook branch, and both are verifiable in the sandbox before going live.
 
