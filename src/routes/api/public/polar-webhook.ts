@@ -3,6 +3,7 @@ import { Webhook } from "standardwebhooks";
 import { planById } from "@/lib/plans";
 import {
   appStatusFor,
+  enforceTrialPolicy,
   isExtraSeatMetadata,
   isExtraSeatProduct,
   planForProduct,
@@ -107,8 +108,11 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
     ...(planId && !revoked ? { plan: planId } : {}),
     ...(revoked
       ? { plan: "trial", status: "canceled", seats: 1 }
-      : { status: appStatusFor(d.status) }),
+      : // Trials are Angel-only: a trialing Syndicate/Institutional
+        // subscription stays canceled until the payment lands.
+        { status: enforceTrialPolicy(planId, appStatusFor(d.status)) }),
     ...(!revoked && seats ? { seats } : {}),
+
     polar_subscription_id: d.id ?? null,
     polar_product_id: productId,
     polar_customer_id: d.customer?.id ?? null,

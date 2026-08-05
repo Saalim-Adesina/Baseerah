@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   backfillOwnerSeats,
+  clearOrganizationSubscription,
   deleteOrganization,
   listOrganizations,
   updateOrganization,
@@ -49,6 +50,7 @@ function AdminPage() {
   const save = useServerFn(updateOrganization);
   const backfill = useServerFn(backfillOwnerSeats);
   const remove = useServerFn(deleteOrganization);
+  const clearSub = useServerFn(clearOrganizationSubscription);
 
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
@@ -178,6 +180,11 @@ function AdminPage() {
                 setEditing(null);
                 void refresh();
               }}
+              onClearSubscription={async (reason) => {
+                await clearSub({ data: { userId: org.userId, reason } });
+                toast.success("Subscription removed — the account and its roles are untouched.");
+                void refresh();
+              }}
               onSave={async (input) => {
                 try {
                   await save({ data: { userId: org.userId, ...input } });
@@ -211,12 +218,14 @@ function OrgCard({
   onToggle,
   onSave,
   onDelete,
+  onClearSubscription,
 }: {
   org: OrgRow;
   open: boolean;
   onToggle: () => void;
   onSave: (input: EditInput) => Promise<void>;
   onDelete: (confirmEmail: string) => Promise<void>;
+  onClearSubscription: (reason: string) => Promise<void>;
 }) {
   const [plan, setPlan] = useState(org.plan);
   const [status, setStatus] = useState(org.status);
@@ -227,6 +236,7 @@ function OrgCard({
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   return (
     <section className="panel px-5 py-4">
@@ -298,7 +308,9 @@ function OrgCard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {APP_STATUSES.map((s) => (
+                {APP_STATUSES.filter(
+                  (s) => s !== "trialing" || plan === "trial" || plan === "angel",
+                ).map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
                   </SelectItem>
@@ -346,13 +358,38 @@ function OrgCard({
               maxLength={280}
             />
           </label>
-          <div className="md:col-span-2">
+          <div className="flex flex-wrap items-center gap-3 md:col-span-2">
             <Button type="submit" disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save subscription
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={clearing}
+              onClick={async () => {
+                setClearing(true);
+                try {
+                  await onClearSubscription(reason.trim() || "Subscription removed by superadmin");
+                  setPlan("trial");
+                  setStatus("canceled");
+                  setSeats("1");
+                  setSubscriptionId("");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not remove plan");
+                }
+                setClearing(false);
+              }}
+            >
+              {clearing ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Delete subscription
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Removes the plan, seats and Polar subscription link. The account, its Polar customer
+              and any admin role are kept — safe to run on your own superadmin account.
+            </span>
           </div>
         </form>
       ) : null}
+
 
       {open ? (
         <div className="mt-4 grid gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 md:grid-cols-[1fr_auto] md:items-end">

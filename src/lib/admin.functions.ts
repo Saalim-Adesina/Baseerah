@@ -8,6 +8,7 @@ import {
   normalizeEmail,
   seatCeiling,
   seatsForPlan,
+  trialAllowedForPlan,
 } from "@/lib/billing-rules";
 
 export type OrgRow = {
@@ -83,6 +84,10 @@ async function buildOrgs(): Promise<OrgRow[]> {
       warnings.push(
         "No Polar account linked — every account must exist in Polar, even on a trial.",
       );
+    if ((s.status ?? "trialing") === "trialing" && plan !== "trial" && plan !== "angel")
+      warnings.push(
+        `Trialing on the ${plan} plan — trials are Angel-only, this account must pay in full before access.`,
+      );
 
     return {
       userId: p.id,
@@ -148,6 +153,13 @@ export const updateOrganization = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Trials are Angel-only; every other plan is pay-first.
+    if (data.status === "trialing" && !trialAllowedForPlan(data.plan)) {
+      throw new Error(
+        `Trials are only available on the Angel plan — ${data.plan} accounts must pay in full before access.`,
+      );
+    }
 
     const plan = planById(data.plan);
     const bundled = plan?.seatsIncluded ?? 1;
@@ -290,4 +302,65 @@ export const backfillOwnerSeats = createServerFn({ method: "POST" })
     });
 
     return { created };
+  });
+
+/**
+ * Removes an account's subscription without touching the account itself.
+ * Plan, seats and Polar links are reset; the auth user, profile, seat rows and
+ * — importantly — any `user_roles` entries survive, so a superadmin can drop
+ * their own paid plan and stay a superadmin.
+ */
+export const clearOrganizationSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        reason: z.string().trim().min(3).max(280).default("Subscription removed by superadmin"),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const row = {
+      plan: "trial",
+      // Trials are Angel-only, so a cleared subscription has no access until
+      // a new plan is bought.
+      status: "canceled",
+      seats: 1,
+      polar_subscription_id: null,
+      polar_product_id: null,
+      current_period_end: null,
+      manual_override_at: new Date().toISOString(),
+      override_reason: data.reason,
+    };
+
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update(row as never)
+      .eq("user_id", data.userId);
+    if (error) throw new Error(error.message);
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.userId)
+      .maybeSingle();
+
+    await audit({
+      event_type: "admin.subscription_cleared",
+      signature_valid: true,
+      outcome: "applied",
+      matched_user_id: data.userId,
+      matched_email: (profile as any)?.email ?? null,
+      mapped_plan: "trial",
+      mapped_seats: 1,
+      mapping_source: "none",
+      notes: `Superadmin ${context.userId} removed the subscription (roles kept): ${data.reason}`,
+      applied_row: row,
+    });
+
+    return { ok: true };
   });
