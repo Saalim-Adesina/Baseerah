@@ -58,7 +58,31 @@ One-time backfill, migration plus a reconciliation pass:
 
 Afterwards, re-running reconciliation should report every account as `ok`. That is the acceptance test.
 
+## Superadmin dashboard
+
+A single admin-only page at `/admin` listing every organization (account owner) with its plan, status, seats used vs. allowed, Polar link state, and last webhook event. Search by email, filter by plan/status/issue.
+
+Per organization, an editor to change:
+
+- Plan (angel / syndicate / institution / trial)
+- Status (trialing / active / past_due / canceled)
+- Seat allowance (within the plan ceiling, or explicitly overridden)
+- Polar customer / subscription link (re-link by email, or clear a bad link)
+- Seat rows: change a member's role, remove a seat, resend or revoke an invite
+
+**It still obeys the same rules.** This is the important part — the dashboard is not a back door:
+
+- Every edit goes through the same shared rules module, so a plan change recomputes seats exactly the way a webhook would.
+- Seat changes re-check the plan ceiling. Reducing seats below the number of occupied seats is refused with a clear message naming which seats to remove first.
+- The owner's admin seat can never be removed or demoted.
+- Setting a plan that conflicts with live Polar data is allowed but marked as a **manual override**, shown as a drift warning on the account, and surfaced by reconciliation until it is resolved (either Polar catches up or the override is cleared).
+- Every action writes an audit row (who did it, before → after, reason) into the same audit table the webhook uses, visible on the audit page.
+- Access requires the `admin` role in the roles table, checked server-side on every action, never in the browser.
+
+Risk to watch: this page can write to any account, so all mutations live in one server module with a single admin check plus per-action validation, and destructive actions (clearing a Polar link, removing seats) require a typed confirmation.
+
 ## Effort and risk
+
 
 | Piece | Effort | Risk |
 | --- | --- | --- |
