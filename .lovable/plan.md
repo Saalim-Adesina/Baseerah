@@ -58,7 +58,31 @@ One-time backfill, migration plus a reconciliation pass:
 
 Afterwards, re-running reconciliation should report every account as `ok`. That is the acceptance test.
 
+## Superadmin dashboard
+
+A single admin-only page at `/admin` listing every organization (account owner) with its plan, status, seats used vs. allowed, Polar link state, and last webhook event. Search by email, filter by plan/status/issue.
+
+Per organization, an editor to change:
+
+- Plan (angel / syndicate / institution / trial)
+- Status (trialing / active / past_due / canceled)
+- Seat allowance (within the plan ceiling, or explicitly overridden)
+- Polar customer / subscription link (re-link by email, or clear a bad link)
+- Seat rows: change a member's role, remove a seat, resend or revoke an invite
+
+**It still obeys the same rules.** This is the important part — the dashboard is not a back door:
+
+- Every edit goes through the same shared rules module, so a plan change recomputes seats exactly the way a webhook would.
+- Seat changes re-check the plan ceiling. Reducing seats below the number of occupied seats is refused with a clear message naming which seats to remove first.
+- The owner's admin seat can never be removed or demoted.
+- Setting a plan that conflicts with live Polar data is allowed but marked as a **manual override**, shown as a drift warning on the account, and surfaced by reconciliation until it is resolved (either Polar catches up or the override is cleared).
+- Every action writes an audit row (who did it, before → after, reason) into the same audit table the webhook uses, visible on the audit page.
+- Access requires the `admin` role in the roles table, checked server-side on every action, never in the browser.
+
+Risk to watch: this page can write to any account, so all mutations live in one server module with a single admin check plus per-action validation, and destructive actions (clearing a Polar link, removing seats) require a typed confirmation.
+
 ## Effort and risk
+
 
 | Piece | Effort | Risk |
 | --- | --- | --- |
@@ -69,6 +93,8 @@ Afterwards, re-running reconciliation should report every account as `ok`. That 
 | OAuth signup gate | Small | Medium — sits in the sign-in path, so a bug blocks logins; guarded to fail open on lookup errors |
 | Reconciliation + seat checks | Medium | Low — reporting first, fixes are explicit actions |
 | Backfill of existing records | Small | Medium — writes to live rows; runs as a reported dry run first, then applies |
+| Superadmin dashboard | Medium | Medium-high — can write to any account, so it ships behind one server-side admin gate, rule-checked mutations, and full audit logging |
+
 
 Overall: a solid but contained piece of work. Most of it is consolidation of logic that already exists. The two parts that genuinely change behaviour are server-side seat enforcement and the extra-seat webhook branch, and both are verifiable in the sandbox before going live.
 
@@ -78,5 +104,8 @@ Overall: a solid but contained piece of work. Most of it is consolidation of log
 - New `src/lib/seats.functions.ts`: `inviteSeat`, `changeSeatRole`, `removeSeat`, `ensureOwnerSeat` — all `requireSupabaseAuth`, all re-checking `atSeatLimit`.
 - Migration: tighten `team_members` access so members are written through server code, not the browser; unique index on (owner_id, lower(email)); backfill owner admin rows.
 - `ensureAccountBaseline` called from the authenticated layout's first load.
-- Audit rows gain `backfill` and `manual_fix` outcomes.
-- Tests: seat ceiling enforcement server-side, owner-seat idempotency, extra-seat event does not clobber the plan link, and webhook/reconciliation parity on plan + status + seats.
+- Audit rows gain `backfill`, `manual_fix` and `admin_edit` outcomes.
+- New `src/lib/admin.functions.ts` (`listOrganizations`, `updateOrganizationBilling`, `updateOrganizationSeat`, `relinkPolarCustomer`) — all `requireSupabaseAuth` + `has_role(admin)`, all routed through `billing-rules.ts`, all audit-logged; new `src/routes/_authenticated/admin.tsx` linked from Plan & billing for admins.
+- Subscriptions gain an override marker (e.g. `manual_override_at` / `override_reason`) so reconciliation can distinguish intentional admin edits from drift.
+- Tests: seat ceiling enforcement server-side, owner-seat idempotency, extra-seat event does not clobber the plan link, webhook/reconciliation parity on plan + status + seats, and admin edits rejected for non-admins.
+
