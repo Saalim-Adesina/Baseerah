@@ -180,6 +180,11 @@ function AdminPage() {
                 setEditing(null);
                 void refresh();
               }}
+              onClearSubscription={async (reason) => {
+                await clearSub({ data: { userId: org.userId, reason } });
+                toast.success("Subscription removed — the account and its roles are untouched.");
+                void refresh();
+              }}
               onSave={async (input) => {
                 try {
                   await save({ data: { userId: org.userId, ...input } });
