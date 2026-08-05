@@ -3,6 +3,7 @@ import { Webhook } from "standardwebhooks";
 import { planById } from "@/lib/plans";
 import {
   appStatusFor,
+  enforceTrialPolicy,
   isExtraSeatMetadata,
   isExtraSeatProduct,
   planForProduct,
