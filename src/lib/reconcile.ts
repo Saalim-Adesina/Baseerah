@@ -246,7 +246,31 @@ export function reconcile(
   for (const row of appRows) {
     if (used.has(row.userId)) continue;
     const claimsPaid = row.plan !== "trial" || !!row.polarSubscriptionId;
-    if (!claimsPaid) continue;
+
+    if (!claimsPaid) {
+      // Rule: every app account must exist in Polar, even on a trial. A trial
+      // row with no Polar customer is unbilled and cannot open the portal.
+      if (row.polarCustomerId) continue;
+      items.push({
+        key: `app:${row.userId}`,
+        verdict: "no_polar_account",
+        email: row.email,
+        matchedBy: null,
+        polar: null,
+        app: row,
+        issues: [
+          {
+            field: "polar_customer_id",
+            polar: null,
+            app: null,
+            detail:
+              "App account has no Polar customer. Every account must exist in Polar, even on a trial — open the billing portal for this user or create the customer in Polar to link it.",
+          },
+        ],
+        fix: null,
+      });
+      continue;
+    }
     items.push({
       key: `app:${row.userId}`,
       verdict: "orphan_app",
@@ -273,7 +297,9 @@ export function reconcile(
     missing_link: 0,
     orphan_polar: 0,
     orphan_app: 0,
+    no_polar_account: 0,
   };
+
   for (const item of items) counts[item.verdict] += 1;
 
   return { server, checkedAt: new Date().toISOString(), counts, items };
