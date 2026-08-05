@@ -84,6 +84,10 @@ async function buildOrgs(): Promise<OrgRow[]> {
       warnings.push(
         "No Polar account linked — every account must exist in Polar, even on a trial.",
       );
+    if ((s.status ?? "trialing") === "trialing" && plan !== "trial" && plan !== "angel")
+      warnings.push(
+        `Trialing on the ${plan} plan — trials are Angel-only, this account must pay in full before access.`,
+      );
 
     return {
       userId: p.id,
