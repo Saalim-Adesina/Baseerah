@@ -189,6 +189,54 @@ export const updateOrganization = createServerFn({ method: "POST" })
     return { ok: true, seats };
   });
 
+/**
+ * Permanently deletes an account: the auth user plus every row that cascades
+ * from it (profile, subscription, seats, roles). Superadmins cannot delete
+ * their own account, so the dashboard can never lock itself out.
+ */
+export const deleteOrganization = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        confirmEmail: z.string().trim().email(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as any);
+    if (data.userId === context.userId) throw new Error("You cannot delete your own account.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.userId)
+      .maybeSingle();
+
+    const email = normalizeEmail((profile as any)?.email);
+    if (!email || email !== normalizeEmail(data.confirmEmail)) {
+      throw new Error("Confirmation email does not match this account.");
+    }
+
+    await supabaseAdmin.from("team_members").delete().eq("owner_id", data.userId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+
+    await audit({
+      event_type: "admin.account_deleted",
+      signature_valid: true,
+      outcome: "applied",
+      matched_user_id: data.userId,
+      matched_email: email,
+      mapping_source: "none",
+      notes: `Superadmin ${context.userId} deleted account ${email}.`,
+    });
+
+    return { ok: true };
+  });
+
 /** Repairs every account that is missing its owner admin seat row. */
 export const backfillOwnerSeats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

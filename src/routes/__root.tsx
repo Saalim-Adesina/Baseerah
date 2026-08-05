@@ -9,9 +9,10 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { ChevronLeft } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/lib/account";
+import { useIsAdmin, useSession } from "@/lib/account";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -123,7 +124,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function TopNav() {
   const { user, loading } = useSession();
+  const isAdmin = useIsAdmin();
   const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   async function handleSignOut() {
@@ -139,7 +142,15 @@ function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
-        <Link to="/" className="flex items-center gap-2.5">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.history.back()}
+          className="rounded-md border border-border px-2 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <Link to={user ? "/pipeline" : "/"} className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
             M
           </span>
@@ -160,6 +171,11 @@ function TopNav() {
               <Link to="/billing" className={linkClass}>
                 Plan
               </Link>
+              {isAdmin ? (
+                <Link to="/admin" className={linkClass}>
+                  Admin
+                </Link>
+              ) : null}
             </>
           ) : null}
         </nav>

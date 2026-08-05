@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Loader2, RefreshCw, ScrollText, Search } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, ScrollText, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import {
   backfillOwnerSeats,
+  deleteOrganization,
   listOrganizations,
   updateOrganization,
   type OrgRow,
@@ -46,6 +47,7 @@ function AdminPage() {
   const load = useServerFn(listOrganizations);
   const save = useServerFn(updateOrganization);
   const backfill = useServerFn(backfillOwnerSeats);
+  const remove = useServerFn(deleteOrganization);
 
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
@@ -96,12 +98,17 @@ function AdminPage() {
           <h1 className="mt-1 text-4xl">Accounts &amp; subscriptions</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every edit here goes through the same rulebook the webhook uses — seats are clamped to
-            the plan, and each change is stamped and written to the billing log.
+            the plan, and each change is stamped and written to the billing log. Your own
+            superadmin account is listed too, so you can run a plan of your own — but it can never
+            be deleted from here.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => void refresh()}>
             <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/billing">My plan</Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/webhook-audit">
@@ -162,6 +169,12 @@ function AdminPage() {
               org={org}
               open={editing === org.userId}
               onToggle={() => setEditing(editing === org.userId ? null : org.userId)}
+              onDelete={async (confirmEmail) => {
+                await remove({ data: { userId: org.userId, confirmEmail } });
+                toast.success("Account deleted.");
+                setEditing(null);
+                void refresh();
+              }}
               onSave={async (input) => {
                 try {
                   await save({ data: { userId: org.userId, ...input } });
@@ -194,11 +207,13 @@ function OrgCard({
   open,
   onToggle,
   onSave,
+  onDelete,
 }: {
   org: OrgRow;
   open: boolean;
   onToggle: () => void;
   onSave: (input: EditInput) => Promise<void>;
+  onDelete: (confirmEmail: string) => Promise<void>;
 }) {
   const [plan, setPlan] = useState(org.plan);
   const [status, setStatus] = useState(org.status);
@@ -207,6 +222,8 @@ function OrgCard({
   const [subscriptionId, setSubscriptionId] = useState(org.polarSubscriptionId ?? "");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   return (
     <section className="panel px-5 py-4">
@@ -332,6 +349,39 @@ function OrgCard({
             </Button>
           </div>
         </form>
+      ) : null}
+
+      {open ? (
+        <div className="mt-4 grid gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 md:grid-cols-[1fr_auto] md:items-end">
+          <label className="text-xs text-muted-foreground">
+            Delete this account permanently — type{" "}
+            <span className="text-foreground">{org.email}</span> to confirm. Seats, deals access,
+            profile and billing links are removed.
+            <Input
+              className="mt-1"
+              value={confirmDelete}
+              onChange={(e) => setConfirmDelete(e.target.value)}
+              placeholder={org.email ?? "email"}
+            />
+          </label>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={deleting || confirmDelete.trim().toLowerCase() !== (org.email ?? "")}
+            onClick={async () => {
+              setDeleting(true);
+              try {
+                await onDelete(confirmDelete.trim());
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Delete failed");
+              }
+              setDeleting(false);
+            }}
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Delete account
+          </Button>
+        </div>
       ) : null}
     </section>
   );
