@@ -80,3 +80,35 @@ export function seatCeiling(plan: Plan | undefined, paidSeats: number | null | u
 
 /** What an account looks like when it has no live Polar subscription. */
 export const TRIAL_BASELINE = { plan: "trial" as const, status: "canceled" as const, seats: 1 };
+
+/**
+ * Trials are an Angel-only offer. Syndicate and Institutional accounts pay in
+ * full before they get access — there is no free window on those plans.
+ */
+export const TRIAL_ELIGIBLE_PLANS = new Set<AppPlanId>(["trial", "angel"]);
+
+/** True when this plan may sit in a trialing state. */
+export function trialAllowedForPlan(plan: string | null | undefined) {
+  return TRIAL_ELIGIBLE_PLANS.has((plan ?? "trial") as AppPlanId);
+}
+
+/** True when a new signup of this investor type may start on a trial. */
+export function trialAllowedForInvestorType(investorType: string | null | undefined) {
+  return (investorType ?? "angel") === "angel";
+}
+
+/**
+ * Coerces a status against the trial policy: a non-Angel plan can never be
+ * "trialing" — until payment lands it stays canceled (no access).
+ */
+export function enforceTrialPolicy(plan: string | null | undefined, status: AppStatus): AppStatus {
+  if (status === "trialing" && !trialAllowedForPlan(plan)) return "canceled";
+  return status;
+}
+
+/** True when the account is entitled to use the product right now. */
+export function hasAccess(plan: string | null | undefined, status: string | null | undefined) {
+  if (status === "active" || status === "past_due") return true;
+  return status === "trialing" && trialAllowedForPlan(plan);
+}
+
