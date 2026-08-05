@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
-import { checkEmailForSignup } from "@/lib/account-link.functions";
+import {
+  checkEmailForSignup,
+  syncMySubscriptionFromPolar,
+} from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -105,6 +108,15 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
+    // Google can create the account without passing through the signup gate,
+    // so reconcile against Polar by email right away: if this person already
+    // bought a plan, their subscription links to this account instead of
+    // leaving an orphan on the billing side.
+    try {
+      await syncMySubscriptionFromPolar();
+    } catch {
+      // Billing sync is best effort — the billing page retries on every visit.
+    }
     navigate({ to: "/pipeline" });
   }
 
