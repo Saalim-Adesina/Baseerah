@@ -104,5 +104,8 @@ Overall: a solid but contained piece of work. Most of it is consolidation of log
 - New `src/lib/seats.functions.ts`: `inviteSeat`, `changeSeatRole`, `removeSeat`, `ensureOwnerSeat` — all `requireSupabaseAuth`, all re-checking `atSeatLimit`.
 - Migration: tighten `team_members` access so members are written through server code, not the browser; unique index on (owner_id, lower(email)); backfill owner admin rows.
 - `ensureAccountBaseline` called from the authenticated layout's first load.
-- Audit rows gain `backfill` and `manual_fix` outcomes.
-- Tests: seat ceiling enforcement server-side, owner-seat idempotency, extra-seat event does not clobber the plan link, and webhook/reconciliation parity on plan + status + seats.
+- Audit rows gain `backfill`, `manual_fix` and `admin_edit` outcomes.
+- New `src/lib/admin.functions.ts` (`listOrganizations`, `updateOrganizationBilling`, `updateOrganizationSeat`, `relinkPolarCustomer`) — all `requireSupabaseAuth` + `has_role(admin)`, all routed through `billing-rules.ts`, all audit-logged; new `src/routes/_authenticated/admin.tsx` linked from Plan & billing for admins.
+- Subscriptions gain an override marker (e.g. `manual_override_at` / `override_reason`) so reconciliation can distinguish intentional admin edits from drift.
+- Tests: seat ceiling enforcement server-side, owner-seat idempotency, extra-seat event does not clobber the plan link, webhook/reconciliation parity on plan + status + seats, and admin edits rejected for non-admins.
+
