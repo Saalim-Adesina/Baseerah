@@ -56,18 +56,30 @@ async function loadAccount(userId: string) {
       .eq("member_user_id", userId)
       .maybeSingle();
     if (!existing) {
-      await supabaseAdmin.from("team_members").upsert(
-        {
-          owner_id: userId,
-          member_user_id: userId,
-          email: ownerEmail,
-          full_name: (profile as { full_name?: string } | null)?.full_name ?? null,
-          role: "admin",
-          status: "active",
-          accepted_at: new Date().toISOString(),
-        } as never,
-        { onConflict: "owner_id,email" },
-      );
+      // Insert may collide with a pre-existing invite row for the same email;
+      // in that case claim it for the owner instead.
+      const { error: insertError } = await supabaseAdmin.from("team_members").insert({
+        owner_id: userId,
+        member_user_id: userId,
+        email: ownerEmail,
+        full_name: (profile as { full_name?: string } | null)?.full_name ?? null,
+        role: "admin",
+        status: "active",
+        accepted_at: new Date().toISOString(),
+      } as never);
+      if (insertError?.code === "23505") {
+        await supabaseAdmin
+          .from("team_members")
+          .update({
+            member_user_id: userId,
+            role: "admin",
+            status: "active",
+            accepted_at: new Date().toISOString(),
+          } as never)
+          .eq("owner_id", userId)
+          .eq("email", ownerEmail);
+      }
+
     }
   }
 
