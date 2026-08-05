@@ -99,6 +99,7 @@ function Billing() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
+      <BackLink />
       <p className="label-caps">Account</p>
       <h1 className="mt-1 text-4xl">Plan &amp; billing</h1>
 

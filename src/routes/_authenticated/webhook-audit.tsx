@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -73,6 +74,7 @@ function WebhookAudit() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
+      <BackLink />
       <p className="label-caps">Admin</p>
       <h1 className="mt-1 text-4xl">Billing webhook audit</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
