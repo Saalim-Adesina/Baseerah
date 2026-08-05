@@ -150,6 +150,13 @@ export const updateOrganization = createServerFn({ method: "POST" })
     await assertAdmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Trials are Angel-only; every other plan is pay-first.
+    if (data.status === "trialing" && !trialAllowedForPlan(data.plan)) {
+      throw new Error(
+        `Trials are only available on the Angel plan — ${data.plan} accounts must pay in full before access.`,
+      );
+    }
+
     const plan = planById(data.plan);
     const bundled = plan?.seatsIncluded ?? 1;
     const extra = Math.max(data.seats - bundled, 0);
