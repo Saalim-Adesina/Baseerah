@@ -119,6 +119,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
         total: orgs.length,
         paid: orgs.filter((o) => o.plan !== "trial").length,
         withWarnings: orgs.filter((o) => o.warnings.length > 0).length,
+        withoutPolar: orgs.filter((o) => !o.polarCustomerId).length,
         seatsAssigned: orgs.reduce((n, o) => n + o.seatsUsed, 0),
       },
     };
