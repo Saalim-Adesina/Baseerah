@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, ExternalLink, Loader2 } from "lucide-react";
+import { Check, ExternalLink, Loader2, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { confirmCheckout, openBillingPortal, startCheckout } from "@/lib/billing.functions";
@@ -121,20 +121,29 @@ function Billing() {
             Deals screened this period: {subscription?.deals_screened_this_period ?? 0}
           </p>
           {showSeats ? <p>Seats: {subscription?.seats ?? currentPlan?.seatsIncluded}</p> : null}
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3"
-            disabled={busy === "portal"}
-            onClick={() => void manageBilling()}
-          >
-            {busy === "portal" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ExternalLink className="h-4 w-4" />
-            )}
-            Manage billing
-          </Button>
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy === "portal"}
+              onClick={() => void manageBilling()}
+            >
+              {busy === "portal" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="h-4 w-4" />
+              )}
+              Manage billing
+            </Button>
+            {admin ? (
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/webhook-audit">
+                  <ScrollText className="h-4 w-4" />
+                  View billing logs
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
 
