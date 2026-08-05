@@ -142,7 +142,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   };
 }
 
-}
+
 
 export const Route = createFileRoute("/api/public/polar-webhook")({
   server: {
