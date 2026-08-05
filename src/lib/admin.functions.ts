@@ -8,6 +8,7 @@ import {
   normalizeEmail,
   seatCeiling,
   seatsForPlan,
+  trialAllowedForPlan,
 } from "@/lib/billing-rules";
 
 export type OrgRow = {
