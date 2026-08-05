@@ -258,7 +258,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
             matched_email: matchedEmail,
             outcome: "error",
             notes: `${decision.notes} Update failed: ${error.message}`,
-            applied_row: decision.row,
+            applied_row: appliedRow,
           });
           return new Response("Update failed", { status: 500 });
         }
@@ -268,7 +268,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           matched_email: matchedEmail,
           outcome: "applied",
           notes: decision.notes,
-          applied_row: decision.row,
+          applied_row: appliedRow,
         });
         return new Response("ok");
       },
