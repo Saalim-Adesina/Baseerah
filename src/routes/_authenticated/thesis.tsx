@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
+import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ function ThesisPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
+      <BackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label-caps">Screening engine</p>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { BackLink } from "@/components/back-link";
 import {
   Select,
   SelectContent,
@@ -92,6 +93,7 @@ function AdminPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
+      <BackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label-caps">Superadmin</p>

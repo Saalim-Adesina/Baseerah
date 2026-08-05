@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { FileUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -131,6 +132,7 @@ function NewDeal() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-10">
+      <BackLink />
       <p className="label-caps">Manual intake</p>
       <h1 className="mt-1 text-4xl">Add a deal</h1>
       <p className="mt-2 text-sm text-muted-foreground">

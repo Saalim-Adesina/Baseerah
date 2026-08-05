@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
 import { TeamSeats } from "@/components/team-seats";
+import { BackLink } from "@/components/back-link";
 import { INVESTOR_TYPES, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/_authenticated/billing")({
@@ -99,6 +100,7 @@ function Billing() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">
+      <BackLink />
       <p className="label-caps">Account</p>
       <h1 className="mt-1 text-4xl">Plan &amp; billing</h1>
 
