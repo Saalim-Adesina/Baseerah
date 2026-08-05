@@ -308,7 +308,9 @@ function OrgCard({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {APP_STATUSES.map((s) => (
+                {APP_STATUSES.filter(
+                  (s) => s !== "trialing" || plan === "trial" || plan === "angel",
+                ).map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
                   </SelectItem>
