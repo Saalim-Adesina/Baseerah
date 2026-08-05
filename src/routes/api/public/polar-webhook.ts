@@ -223,10 +223,33 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           .maybeSingle();
         matchedEmail = (profile as { email?: string } | null)?.email ?? null;
 
+        // Extra-seat subscriptions add to (or remove from) the seat count on
+        // top of the plan bundle, leaving plan and links alone.
+        let appliedRow: Record<string, unknown> = decision.row;
+        if (decision.extraSeat) {
+          const { data: current } = await supabaseAdmin
+            .from("subscriptions")
+            .select("plan, seats")
+            .eq("user_id", decision.userId)
+            .maybeSingle();
+          const plan = (current as { plan?: string } | null)?.plan ?? "trial";
+          const currentSeats = (current as { seats?: number } | null)?.seats ?? 1;
+          const bundled = planById(plan)?.seatsIncluded ?? 1;
+          const extraNow = Math.max(currentSeats - bundled, 0);
+          const nextExtra = decision.revoked
+            ? Math.max(extraNow - decision.extraSeatQuantity, 0)
+            : extraNow + decision.extraSeatQuantity;
+          appliedRow = {
+            ...decision.row,
+            seats: seatsForPlan(plan, nextExtra),
+          };
+        }
+
         const { error } = await supabaseAdmin
           .from("subscriptions")
-          .update(decision.row as never)
+          .update(appliedRow as never)
           .eq("user_id", decision.userId);
+
 
         if (error) {
           console.error("Failed to apply Polar subscription update", error.message);
