@@ -358,8 +358,6 @@ function OrgCard({
               maxLength={280}
             />
           </label>
-          <div className="md:col-span-2">
-            <Button type="submit" disabled={busy}>
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
             <Button type="submit" disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save subscription
