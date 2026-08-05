@@ -30,7 +30,13 @@ export type AppSubRow = {
   currentPeriodEnd: string | null;
 };
 
-export type Verdict = "ok" | "mismatch" | "missing_link" | "orphan_polar" | "orphan_app";
+export type Verdict =
+  | "ok"
+  | "mismatch"
+  | "missing_link"
+  | "orphan_polar"
+  | "orphan_app"
+  | "no_polar_account";
 
 export type ReconcileIssue = {
   field: string;
