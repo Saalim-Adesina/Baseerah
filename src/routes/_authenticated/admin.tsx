@@ -98,12 +98,17 @@ function AdminPage() {
           <h1 className="mt-1 text-4xl">Accounts &amp; subscriptions</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every edit here goes through the same rulebook the webhook uses — seats are clamped to
-            the plan, and each change is stamped and written to the billing log.
+            the plan, and each change is stamped and written to the billing log. Your own
+            superadmin account is listed too, so you can run a plan of your own — but it can never
+            be deleted from here.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => void refresh()}>
             <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/billing">My plan</Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/webhook-audit">
