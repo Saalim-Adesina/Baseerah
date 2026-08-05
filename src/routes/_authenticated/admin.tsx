@@ -134,11 +134,12 @@ function AdminPage() {
       </div>
 
       {summary ? (
-        <div className="mt-8 grid gap-3 sm:grid-cols-4">
+        <div className="mt-8 grid gap-3 sm:grid-cols-5">
           {[
             { label: "Accounts", value: summary["total"] },
             { label: "Paid", value: summary["paid"] },
             { label: "Seats assigned", value: summary["seatsAssigned"] },
+            { label: "No Polar account", value: summary["withoutPolar"] },
             { label: "Rule warnings", value: summary["withWarnings"] },
           ].map((s) => (
             <div key={s.label} className="panel px-4 py-3">

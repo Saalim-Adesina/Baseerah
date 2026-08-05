@@ -79,6 +79,10 @@ async function buildOrgs(): Promise<OrgRow[]> {
       warnings.push(`${used} seats assigned but the plan allows ${ceiling}.`);
     if (plan !== "trial" && !s.polar_subscription_id)
       warnings.push("Paid plan with no Polar subscription linked.");
+    if (!s.polar_customer_id)
+      warnings.push(
+        "No Polar account linked — every account must exist in Polar, even on a trial.",
+      );
 
     return {
       userId: p.id,
@@ -115,6 +119,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
         total: orgs.length,
         paid: orgs.filter((o) => o.plan !== "trial").length,
         withWarnings: orgs.filter((o) => o.warnings.length > 0).length,
+        withoutPolar: orgs.filter((o) => !o.polarCustomerId).length,
         seatsAssigned: orgs.reduce((n, o) => n + o.seatsUsed, 0),
       },
     };
