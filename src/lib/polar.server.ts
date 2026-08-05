@@ -111,11 +111,25 @@ export async function createPortalSession(
     return await session({ external_customer_id: externalCustomerId });
   } catch (error) {
     if (!email) throw error;
-    const found = await findCustomerByEmail(email).catch(() => null);
+    const found =
+      (await findCustomerByEmail(email).catch(() => null)) ??
+      (await createCustomer(email, externalCustomerId).catch(() => null));
     if (!found) throw error;
     return await session({ customer_id: found.id });
   }
 }
+
+/** Creates a Polar customer so the portal can be opened before any purchase. */
+export function createCustomer(email: string, externalCustomerId?: string | null) {
+  return polarFetch<PolarCustomer>("/customers/", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      external_id: externalCustomerId ?? undefined,
+    }),
+  });
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Webhook endpoint management (POST/PATCH /v1/webhooks/endpoints)      */

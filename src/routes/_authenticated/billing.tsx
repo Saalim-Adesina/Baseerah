@@ -89,8 +89,12 @@ function Billing() {
     try {
       const { url } = await portal({ data: undefined });
       window.location.href = url;
-    } catch {
-      toast.error("Billing portal is unavailable — no subscription yet?");
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? `Billing portal error: ${error.message}`
+          : "Billing portal is unavailable right now.",
+      );
       setBusy(null);
     }
   }
