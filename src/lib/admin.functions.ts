@@ -79,6 +79,10 @@ async function buildOrgs(): Promise<OrgRow[]> {
       warnings.push(`${used} seats assigned but the plan allows ${ceiling}.`);
     if (plan !== "trial" && !s.polar_subscription_id)
       warnings.push("Paid plan with no Polar subscription linked.");
+    if (!s.polar_customer_id)
+      warnings.push(
+        "No Polar account linked — every account must exist in Polar, even on a trial.",
+      );
 
     return {
       userId: p.id,
