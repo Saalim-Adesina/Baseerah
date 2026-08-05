@@ -156,10 +156,13 @@ function AuthPage() {
       <section className="panel px-6 py-7">
         <h2 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {isSignUp
-            ? "14-day trial. Screen your first 25 deals before you pay a cent."
-            : "Sign in to your screening desk."}
+          {!isSignUp
+            ? "Sign in to your screening desk."
+            : investorType === "angel"
+              ? "14-day trial. Screen your first 25 deals before you pay a cent."
+              : "Trials are for solo angels. Syndicate and institutional accounts activate once payment is made."}
         </p>
+
 
         <Button variant="outline" className="mt-6 w-full" onClick={handleGoogle} type="button">
           Continue with Google
