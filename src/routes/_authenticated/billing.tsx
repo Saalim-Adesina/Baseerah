@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
 import { TeamSeats } from "@/components/team-seats";
+import { BackLink } from "@/components/back-link";
 import { INVESTOR_TYPES, useAccount } from "@/lib/account";
 
 export const Route = createFileRoute("/_authenticated/billing")({
