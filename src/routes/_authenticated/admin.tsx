@@ -50,6 +50,7 @@ function AdminPage() {
   const save = useServerFn(updateOrganization);
   const backfill = useServerFn(backfillOwnerSeats);
   const remove = useServerFn(deleteOrganization);
+  const clearSub = useServerFn(clearOrganizationSubscription);
 
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
