@@ -36,8 +36,8 @@ describe("polar subscription webhook mapping", () => {
         customer: { id: "cus_1", external_id: "user-123" },
       },
     });
-    expect(update!.row['plan']).toBe("trial");
-    expect(update!.row['status']).toBe("canceled");
+  expect(update!.row['plan']).toBe("angel_trial");
+  expect(update!.row['status']).toBe("canceled");
   });
 
   it("falls back to metadata for the user id", () => {
