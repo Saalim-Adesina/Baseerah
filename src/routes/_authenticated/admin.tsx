@@ -22,7 +22,7 @@ import {
   updateOrganization,
   type OrgRow,
 } from "@/lib/admin.functions";
-import { APP_PLANS, APP_STATUSES } from "@/lib/billing-rules";
+import { APP_PLANS, APP_STATUSES, planDisplayName } from "@/lib/billing-rules";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -249,7 +249,9 @@ function OrgCard({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={org.plan === "trial" ? "secondary" : "default"}>{org.plan}</Badge>
+          <Badge variant={org.plan === "angel_trial" ? "secondary" : "default"}>
+            {planDisplayName(org.plan)}
+          </Badge>
           <Badge variant="outline">{org.status}</Badge>
           {org.manualOverrideAt ? <Badge variant="outline">manual override</Badge> : null}
           <Button variant="outline" size="sm" onClick={onToggle}>
@@ -295,7 +297,7 @@ function OrgCard({
               <SelectContent>
                 {APP_PLANS.map((p) => (
                   <SelectItem key={p} value={p}>
-                    {p}
+                    {planDisplayName(p)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -309,7 +311,7 @@ function OrgCard({
               </SelectTrigger>
               <SelectContent>
                 {APP_STATUSES.filter(
-                  (s) => s !== "trialing" || plan === "trial" || plan === "angel",
+                  (s) => s !== "trialing" || plan === "angel_trial" || plan === "angel",
                 ).map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
@@ -370,7 +372,7 @@ function OrgCard({
                 setClearing(true);
                 try {
                   await onClearSubscription(reason.trim() || "Subscription removed by superadmin");
-                  setPlan("trial");
+                  setPlan("angel_trial");
                   setStatus("canceled");
                   setSeats("1");
                   setSubscriptionId("");

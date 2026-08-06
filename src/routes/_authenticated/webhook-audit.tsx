@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listWebhookEvents, type WebhookAuditRow } from "@/lib/webhook-audit.functions";
+import { planDisplayName } from "@/lib/billing-rules";
 
 export const Route = createFileRoute("/_authenticated/webhook-audit")({
   head: () => ({
@@ -156,7 +157,7 @@ function WebhookAudit() {
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {new Date(r.received_at).toLocaleString()} ·{" "}
-                    {r.mapped_plan ? `plan ${r.mapped_plan}` : "no plan change"} ·{" "}
+                    {r.mapped_plan ? `plan ${planDisplayName(r.mapped_plan)}` : "no plan change"} ·{" "}
                     {r.mapped_seats ? `${r.mapped_seats} seats` : "seats unchanged"} · mapped via{" "}
                     {r.mapping_source ?? "—"}
                   </p>

@@ -68,7 +68,7 @@ async function buildOrgs(): Promise<OrgRow[]> {
 
   return ((profiles.data ?? []) as any[]).map((p) => {
     const s = subByUser.get(p.id) ?? {};
-    const plan = s.plan ?? "trial";
+    const plan = s.plan ?? "angel_trial";
     const paidSeats = s.seats ?? 1;
     const used = seatCounts.get(p.id) ?? 0;
     const rawCeiling = seatCeiling(planById(plan), paidSeats);
@@ -78,13 +78,13 @@ async function buildOrgs(): Promise<OrgRow[]> {
     if (used === 0) warnings.push("No owner seat row — the owner's admin seat is missing.");
     if (ceiling !== null && used > ceiling)
       warnings.push(`${used} seats assigned but the plan allows ${ceiling}.`);
-    if (plan !== "trial" && !s.polar_subscription_id)
+    if (plan !== "angel_trial" && !s.polar_subscription_id)
       warnings.push("Paid plan with no Polar subscription linked.");
     if (!s.polar_customer_id)
       warnings.push(
-        "No Polar account linked — every account must exist in Polar, even on a trial.",
+        "No Polar account linked — every account must exist in Polar, even on an Angel Trial.",
       );
-    if ((s.status ?? "trialing") === "trialing" && plan !== "trial" && plan !== "angel")
+    if ((s.status ?? "trialing") === "trialing" && plan !== "angel_trial" && plan !== "angel")
       warnings.push(
         `Trialing on the ${plan} plan — trials are Angel-only, this account must pay in full before access.`,
       );
@@ -122,7 +122,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
       orgs,
       summary: {
         total: orgs.length,
-        paid: orgs.filter((o) => o.plan !== "trial").length,
+        paid: orgs.filter((o) => o.plan !== "angel_trial").length,
         withWarnings: orgs.filter((o) => o.warnings.length > 0).length,
         withoutPolar: orgs.filter((o) => !o.polarCustomerId).length,
         seatsAssigned: orgs.reduce((n, o) => n + o.seatsUsed, 0),
@@ -164,7 +164,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
     const plan = planById(data.plan);
     const bundled = plan?.seatsIncluded ?? 1;
     const extra = Math.max(data.seats - bundled, 0);
-    const seats = data.plan === "trial" ? 1 : seatsForPlan(data.plan, extra);
+    const seats = data.plan === "angel_trial" ? 1 : seatsForPlan(data.plan, extra);
 
     const row = {
       plan: data.plan,
@@ -325,7 +325,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const row = {
-      plan: "trial",
+      plan: "angel_trial",
       // Trials are Angel-only, so a cleared subscription has no access until
       // a new plan is bought.
       status: "canceled",
@@ -355,7 +355,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       outcome: "applied",
       matched_user_id: data.userId,
       matched_email: (profile as any)?.email ?? null,
-      mapped_plan: "trial",
+      mapped_plan: "angel_trial",
       mapped_seats: 1,
       mapping_source: "none",
       notes: `Superadmin ${context.userId} removed the subscription (roles kept): ${data.reason}`,

@@ -44,7 +44,7 @@ async function loadAccount(userId: string) {
   ]);
 
   const ownerEmail = normalizeEmail((profile as { email?: string } | null)?.email);
-  const plan = (sub as { plan?: string } | null)?.plan ?? "trial";
+  const plan = (sub as { plan?: string } | null)?.plan ?? "angel_trial";
   const paidSeats = (sub as { seats?: number } | null)?.seats ?? 1;
 
   // Baseline: the owner always holds an admin seat row on their own account.

@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PLANS, planById, seatsSupported } from "@/lib/plans";
+import { planDisplayName } from "@/lib/billing-rules";
 import { TeamSeats } from "@/components/team-seats";
 import { BackLink } from "@/components/back-link";
 import { INVESTOR_TYPES, useAccount } from "@/lib/account";
@@ -111,8 +112,8 @@ function Billing() {
       <div className="panel mt-6 flex flex-wrap items-center justify-between gap-4 px-6 py-5">
         <div>
           <p className="label-caps">Current plan</p>
-          <p className="mt-1 font-display text-3xl capitalize">
-            {loading ? "…" : (subscription?.plan ?? "trial")}
+          <p className="mt-1 font-display text-3xl">
+            {loading ? "…" : planDisplayName(subscription?.plan)}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {subscription?.current_period_end

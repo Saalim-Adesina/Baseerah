@@ -107,7 +107,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   const row = {
     ...(planId && !revoked ? { plan: planId } : {}),
     ...(revoked
-      ? { plan: "trial", status: "canceled", seats: 1 }
+      ? { plan: "angel_trial", status: "canceled", seats: 1 }
       : // Trials are Angel-only: a trialing Syndicate/Institutional
         // subscription stays canceled until the payment lands.
         { status: enforceTrialPolicy(planId, appStatusFor(d.status)) }),
@@ -122,7 +122,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   const notes = !userId
     ? "No external customer id or user_id metadata on the payload — could not match an account."
     : revoked
-      ? "Subscription ended — account reset to trial with 1 seat."
+      ? "Subscription ended — account reset to Angel Trial with 1 seat."
       : mappingSource === "product_id"
         ? `Product ${productId} mapped to the ${planId} plan.`
         : mappingSource === "metadata"
@@ -236,7 +236,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
             .select("plan, seats")
             .eq("user_id", decision.userId)
             .maybeSingle();
-          const plan = (current as { plan?: string } | null)?.plan ?? "trial";
+          const plan = (current as { plan?: string } | null)?.plan ?? "angel_trial";
           const currentSeats = (current as { seats?: number } | null)?.seats ?? 1;
           const bundled = planById(plan)?.seatsIncluded ?? 1;
           const extraNow = Math.max(currentSeats - bundled, 0);
