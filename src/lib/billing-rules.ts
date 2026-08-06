@@ -8,8 +8,20 @@
  */
 import { EXTRA_SEAT_PRODUCT_ID, planById, planIdFromPolarProduct, type Plan } from "@/lib/plans";
 
-export const APP_PLANS = ["trial", "angel", "syndicate", "institution"] as const;
+export const APP_PLANS = ["angel_trial", "angel", "syndicate", "institution"] as const;
 export type AppPlanId = (typeof APP_PLANS)[number];
+
+export const PLAN_DISPLAY_NAMES: Record<AppPlanId, string> = {
+  angel_trial: "Angel Trial",
+  angel: "Angel",
+  syndicate: "Syndicate",
+  institution: "Institutional",
+};
+
+/** Human-readable plan label. Falls back to the raw id so unknown plans stay visible. */
+export function planDisplayName(plan: string | null | undefined): string {
+  return PLAN_DISPLAY_NAMES[(plan ?? "") as AppPlanId] ?? plan ?? "—";
+}
 
 export const APP_STATUSES = ["trialing", "active", "past_due", "canceled"] as const;
 export type AppStatus = (typeof APP_STATUSES)[number];
@@ -79,17 +91,17 @@ export function seatCeiling(plan: Plan | undefined, paidSeats: number | null | u
 }
 
 /** What an account looks like when it has no live Polar subscription. */
-export const TRIAL_BASELINE = { plan: "trial" as const, status: "canceled" as const, seats: 1 };
+export const TRIAL_BASELINE = { plan: "angel_trial" as const, status: "canceled" as const, seats: 1 };
 
 /**
  * Trials are an Angel-only offer. Syndicate and Institutional accounts pay in
  * full before they get access — there is no free window on those plans.
  */
-export const TRIAL_ELIGIBLE_PLANS = new Set<AppPlanId>(["trial", "angel"]);
+export const TRIAL_ELIGIBLE_PLANS = new Set<AppPlanId>(["angel_trial", "angel"]);
 
 /** True when this plan may sit in a trialing state. */
 export function trialAllowedForPlan(plan: string | null | undefined) {
-  return TRIAL_ELIGIBLE_PLANS.has((plan ?? "trial") as AppPlanId);
+  return TRIAL_ELIGIBLE_PLANS.has((plan ?? "angel_trial") as AppPlanId);
 }
 
 /** True when a new signup of this investor type may start on a trial. */
