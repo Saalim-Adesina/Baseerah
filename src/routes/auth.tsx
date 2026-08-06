@@ -285,7 +285,7 @@ function AuthPage() {
           {isSignUp ? "Already screening with Meridian?" : "New here?"}{" "}
           <button
             type="button"
-            className="text-primary underline-offset-4 hover:underline"
+            className="cursor-pointer text-primary underline-offset-4 hover:underline"
             onClick={() => {
               setClaimNotice(null);
               setIsSignUp((value) => !value);
