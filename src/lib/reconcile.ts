@@ -73,7 +73,7 @@ export function appStatusFor(polarStatus: string) {
 
 /** Plan the app row should carry for this Polar subscription. */
 export function expectedPlan(sub: PolarSubRecord) {
-  if (!ACTIVE_POLAR.has(sub.status)) return "trial";
+  if (!ACTIVE_POLAR.has(sub.status)) return "angel_trial";
   return planForProduct(sub.productId);
 }
 
@@ -251,11 +251,11 @@ export function reconcile(
 
   for (const row of appRows) {
     if (used.has(row.userId)) continue;
-    const claimsPaid = row.plan !== "trial" || !!row.polarSubscriptionId;
+    const claimsPaid = row.plan !== "angel_trial" || !!row.polarSubscriptionId;
 
     if (!claimsPaid) {
-      // Rule: every app account must exist in Polar, even on a trial. A trial
-      // row with no Polar customer is unbilled and cannot open the portal.
+      // Rule: every app account must exist in Polar, even on an Angel Trial. A
+      // trial row with no Polar customer is unbilled and cannot open the portal.
       if (row.polarCustomerId) continue;
       items.push({
         key: `app:${row.userId}`,
@@ -270,7 +270,7 @@ export function reconcile(
             polar: null,
             app: null,
             detail:
-              "App account has no Polar customer. Every account must exist in Polar, even on a trial — open the billing portal for this user or create the customer in Polar to link it.",
+              "App account has no Polar customer. Every account must exist in Polar, even on an Angel Trial — open the billing portal for this user or create the customer in Polar to link it.",
           },
         ],
         fix: null,
@@ -293,7 +293,7 @@ export function reconcile(
             "App row claims a paid plan but Polar has no matching subscription. Likely a stale row after a cancellation or a manual edit.",
         },
       ],
-      fix: { plan: "trial", status: "canceled" },
+      fix: { plan: "angel_trial", status: "canceled" },
     });
   }
 

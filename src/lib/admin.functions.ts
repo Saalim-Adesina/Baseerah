@@ -68,7 +68,7 @@ async function buildOrgs(): Promise<OrgRow[]> {
 
   return ((profiles.data ?? []) as any[]).map((p) => {
     const s = subByUser.get(p.id) ?? {};
-    const plan = s.plan ?? "trial";
+    const plan = s.plan ?? "angel_trial";
     const paidSeats = s.seats ?? 1;
     const used = seatCounts.get(p.id) ?? 0;
     const rawCeiling = seatCeiling(planById(plan), paidSeats);
@@ -78,13 +78,13 @@ async function buildOrgs(): Promise<OrgRow[]> {
     if (used === 0) warnings.push("No owner seat row — the owner's admin seat is missing.");
     if (ceiling !== null && used > ceiling)
       warnings.push(`${used} seats assigned but the plan allows ${ceiling}.`);
-    if (plan !== "trial" && !s.polar_subscription_id)
+    if (plan !== "angel_trial" && !s.polar_subscription_id)
       warnings.push("Paid plan with no Polar subscription linked.");
     if (!s.polar_customer_id)
       warnings.push(
-        "No Polar account linked — every account must exist in Polar, even on a trial.",
+        "No Polar account linked — every account must exist in Polar, even on an Angel Trial.",
       );
-    if ((s.status ?? "trialing") === "trialing" && plan !== "trial" && plan !== "angel")
+    if ((s.status ?? "trialing") === "trialing" && plan !== "angel_trial" && plan !== "angel")
       warnings.push(
         `Trialing on the ${plan} plan — trials are Angel-only, this account must pay in full before access.`,
       );
