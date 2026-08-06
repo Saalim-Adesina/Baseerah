@@ -122,7 +122,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
       orgs,
       summary: {
         total: orgs.length,
-        paid: orgs.filter((o) => o.plan !== "trial").length,
+        paid: orgs.filter((o) => o.plan !== "angel_trial").length,
         withWarnings: orgs.filter((o) => o.warnings.length > 0).length,
         withoutPolar: orgs.filter((o) => !o.polarCustomerId).length,
         seatsAssigned: orgs.reduce((n, o) => n + o.seatsUsed, 0),
@@ -164,7 +164,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
     const plan = planById(data.plan);
     const bundled = plan?.seatsIncluded ?? 1;
     const extra = Math.max(data.seats - bundled, 0);
-    const seats = data.plan === "trial" ? 1 : seatsForPlan(data.plan, extra);
+    const seats = data.plan === "angel_trial" ? 1 : seatsForPlan(data.plan, extra);
 
     const row = {
       plan: data.plan,
@@ -325,7 +325,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const row = {
-      plan: "trial",
+      plan: "angel_trial",
       // Trials are Angel-only, so a cleared subscription has no access until
       // a new plan is bought.
       status: "canceled",
@@ -355,7 +355,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       outcome: "applied",
       matched_user_id: data.userId,
       matched_email: (profile as any)?.email ?? null,
-      mapped_plan: "trial",
+      mapped_plan: "angel_trial",
       mapped_seats: 1,
       mapping_source: "none",
       notes: `Superadmin ${context.userId} removed the subscription (roles kept): ${data.reason}`,
