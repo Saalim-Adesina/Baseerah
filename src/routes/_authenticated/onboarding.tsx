@@ -185,7 +185,13 @@ function OnboardingPage() {
   async function persist(complete: boolean) {
     setBusy(true);
     try {
-      await save({ data: { answers, complete } });
+      await save({
+        data: {
+          answers,
+          profile: { full_name: fullName, firm_name: firmName, investor_type: investorType },
+          complete,
+        },
+      });
       if (complete) {
         applyToSettings(answers);
         toast.success("Your screening desk is ready.");
