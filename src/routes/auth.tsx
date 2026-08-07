@@ -50,9 +50,6 @@ function AuthPage() {
   }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [firmName, setFirmName] = useState("");
-  const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [busy, setBusy] = useState(false);
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
