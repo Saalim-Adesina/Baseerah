@@ -221,7 +221,7 @@ function AuthPage() {
                       onClick={() => setInvestorType(option.value)}
                       className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                         investorType === option.value
-                          ? "border-primary bg-primary/10"
+                          ? "border-accent bg-accent/10"
                           : "border-border hover:bg-secondary"
                       }`}
                     >
