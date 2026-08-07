@@ -279,6 +279,15 @@ function AuthPage() {
                   : "Create account"
                 : "Sign in"}
           </Button>
+
+          {formError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {formError}
+            </p>
+          ) : null}
         </form>
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
