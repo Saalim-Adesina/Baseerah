@@ -32,6 +32,7 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +48,12 @@ function ResetPasswordPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    setFormError(null);
+    const invalid = passwordError(password);
+    if (invalid) {
+      setFormError(invalid);
+      return;
+    }
     setBusy(true);
     try {
       const { error } = await supabase.auth.updateUser({ password });
@@ -54,7 +61,7 @@ function ResetPasswordPage() {
       toast.success("Password set. Welcome back.");
       navigate({ to: "/pipeline" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not set the password.");
+      setFormError(error instanceof Error ? error.message : "Could not set the password.");
     } finally {
       setBusy(false);
     }
@@ -77,14 +84,24 @@ function ResetPasswordPage() {
                 id="password"
                 type="password"
                 required
-                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <div className="pt-1.5">
+                <PasswordChecklist value={password} />
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={busy}>
               {busy ? "Saving…" : "Save password"}
             </Button>
+            {formError ? (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {formError}
+              </p>
+            ) : null}
           </form>
         ) : (
           <p className="mt-6 text-sm text-muted-foreground">
