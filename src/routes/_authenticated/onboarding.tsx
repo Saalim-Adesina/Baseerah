@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Copy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Copy, MailCheck } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +58,8 @@ type StepId =
   | "thesis"
   | "check"
   | "heard"
-  | "inbox";
+  | "inbox"
+  | "confirm";
 
 const STEPS: { id: StepId; title: string; blurb: string }[] = [
   {
@@ -115,6 +117,11 @@ const STEPS: { id: StepId; title: string; blurb: string }[] = [
     title: "Connect your deal inbox",
     blurb: "Forward inbound decks here and they land in your pipeline, screened.",
   },
+  {
+    id: "confirm",
+    title: "Confirm your email",
+    blurb: "One last thing — verify the address your deals and memos are tied to.",
+  },
 ];
 
 function OnboardingPage() {
@@ -130,6 +137,32 @@ function OnboardingPage() {
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const emailConfirmed = Boolean(
+    (user as { email_confirmed_at?: string | null } | null)?.email_confirmed_at,
+  );
+
+  /** The link lands the user in the app, not back on the sign-in page. */
+  async function sendConfirmation() {
+    if (!user?.email) return;
+    setSending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: user.email,
+        options: { emailRedirectTo: `${window.location.origin}/pipeline` },
+      });
+      if (error) throw error;
+      setSent(true);
+      toast.success("Confirmation email sent.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send the email.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -444,7 +477,48 @@ function OnboardingPage() {
               </button>
             </div>
           ) : null}
+
+          {step.id === "confirm" ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-surface p-5">
+                <p className="label-caps">Account email</p>
+                <p className="mt-2 font-mono text-sm">{user?.email}</p>
+                {emailConfirmed ? (
+                  <p className="mt-3 flex items-center gap-2 text-sm text-accent-foreground">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent">
+                      <Check className="h-3.5 w-3.5 text-accent-foreground" />
+                    </span>
+                    This address is confirmed.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      We'll send a confirmation link. Opening it brings you straight into your
+                      pipeline — no need to sign in again.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      disabled={sending}
+                      onClick={() => void sendConfirmation()}
+                    >
+                      <MailCheck className="mr-1.5 h-3.5 w-3.5" />
+                      {sent ? "Resend confirmation email" : "Send confirmation email"}
+                    </Button>
+                    {sent ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Sent — check your inbox. You can finish setup now and confirm later.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
+
 
         <div className="mt-12 flex items-center justify-between gap-3">
           <button
