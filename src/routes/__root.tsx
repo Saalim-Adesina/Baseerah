@@ -241,16 +241,45 @@ function TopNav() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetContent side="right" className="w-[280px] p-5">
-              <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-              <div className="mt-6 flex flex-col gap-1">
+
+          {/* Mobile slide-out panel */}
+          <div
+            className={
+              "fixed inset-0 z-50 sm:hidden " + (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
+            }
+            aria-hidden={!mobileOpen}
+          >
+            <div
+              className={
+                "absolute inset-0 bg-black/40 transition-opacity duration-300 " +
+                (mobileOpen ? "opacity-100" : "opacity-0")
+              }
+              onClick={() => setMobileOpen(false)}
+            />
+            <div
+              className={
+                "absolute right-0 top-0 h-full w-[280px] border-l border-border bg-background p-5 shadow-xl transition-transform duration-300 " +
+                (mobileOpen ? "translate-x-0" : "translate-x-full")
+              }
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-display text-lg tracking-tight">Menu</span>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <nav className="mt-6 flex flex-col gap-1">
                 <NavLinks mobile />
                 <div className="my-3 border-t border-border" />
                 <AuthActions mobile />
-              </div>
-            </SheetContent>
-          </Sheet>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
     </header>
