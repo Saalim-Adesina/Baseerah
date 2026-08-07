@@ -96,7 +96,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName, firm_name: firmName, investor_type: investorType },
+            data: { investor_type: "angel" },
           },
         });
         if (error) throw error;
