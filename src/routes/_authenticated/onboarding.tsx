@@ -154,7 +154,6 @@ function OnboardingPage() {
   const set = <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K]) =>
     setAnswers((prev) => ({ ...prev, [key]: value }));
 
-
   const toggleIn = (key: "tools" | "industries", value: string) =>
     setAnswers((prev) => {
       const current = prev[key];
@@ -176,9 +175,7 @@ function OnboardingPage() {
       ...thesis,
       ...(final.thesis_sentence ? { statement: final.thesis_sentence } : {}),
       ...(industries ? { preferredIndustries: industries } : {}),
-      ...(final.check_size
-        ? { checkSize: labelFor(CHECK_SIZE_OPTIONS, final.check_size) }
-        : {}),
+      ...(final.check_size ? { checkSize: labelFor(CHECK_SIZE_OPTIONS, final.check_size) } : {}),
     });
   }
 
@@ -288,7 +285,6 @@ function OnboardingPage() {
           ) : null}
 
           {step.id === "volume" ? (
-
             <ChoiceList
               options={DEALS_PER_MONTH_OPTIONS}
               value={answers.deals_per_month}

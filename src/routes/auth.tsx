@@ -9,10 +9,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { PasswordChecklist } from "@/components/password-checklist";
 import { passwordError } from "@/lib/password";
 
-import {
-  checkEmailForSignup,
-  syncMySubscriptionFromPolar,
-} from "@/lib/account-link.functions";
+import { checkEmailForSignup, syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -31,7 +28,7 @@ export const Route = createFileRoute("/auth")({
     ],
   }),
   validateSearch: (search: Record<string, unknown>) => ({
-    mode: search['mode'] === "signin" ? ("signin" as const) : ("signup" as const),
+    mode: search["mode"] === "signin" ? ("signin" as const) : ("signup" as const),
   }),
   component: AuthPage,
 });
@@ -146,14 +143,13 @@ function AuthPage() {
             : "Sign in to your screening desk."}
         </p>
 
-
-
         <Button variant="outline" className="mt-6 w-full" onClick={handleGoogle} type="button">
           Continue with Google
         </Button>
 
         <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
+          <span className="h-px flex-1 bg-border" /> or email{" "}
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         {claimNotice ? (
@@ -163,8 +159,6 @@ function AuthPage() {
         ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-
-
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -211,7 +205,6 @@ function AuthPage() {
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Working…" : isSignUp ? "Create account" : "Sign in"}
           </Button>
-
 
           {formError ? (
             <p
