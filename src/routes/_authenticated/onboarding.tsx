@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/lib/account";
+import { useSession, INVESTOR_TYPES, type InvestorType } from "@/lib/account";
 import { inboxAddress } from "@/lib/account";
+
 import {
   CHECK_SIZE_OPTIONS,
   DEALS_PER_MONTH_OPTIONS,
@@ -46,6 +47,8 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 });
 
 type StepId =
+  | "name"
+  | "investor"
   | "volume"
   | "method"
   | "hours"
@@ -57,6 +60,16 @@ type StepId =
   | "inbox";
 
 const STEPS: { id: StepId; title: string; blurb: string }[] = [
+  {
+    id: "name",
+    title: "What's your name?",
+    blurb: "This is how memos and pass emails will sign off.",
+  },
+  {
+    id: "investor",
+    title: "How do you invest?",
+    blurb: "Sets the shape of your workspace — solo desk or a team with seats.",
+  },
   {
     id: "volume",
     title: "How many deals do you review each month?",
@@ -111,6 +124,9 @@ function OnboardingPage() {
   const save = useServerFn(saveMyOnboarding);
 
   const [answers, setAnswers] = useState<OnboardingAnswers>(EMPTY_ANSWERS);
+  const [fullName, setFullName] = useState("");
+  const [firmName, setFirmName] = useState("");
+  const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -121,6 +137,9 @@ function OnboardingPage() {
       .then((state) => {
         if (!active) return;
         if (state.answers) setAnswers({ ...EMPTY_ANSWERS, ...state.answers });
+        setFullName(state.profile.full_name ?? "");
+        setFirmName(state.profile.firm_name ?? "");
+        setInvestorType(state.profile.investor_type);
         setReady(true);
       })
       .catch(() => setReady(true));
@@ -156,16 +175,20 @@ function OnboardingPage() {
       ...thesis,
       ...(final.thesis_sentence ? { statement: final.thesis_sentence } : {}),
       ...(industries ? { preferredIndustries: industries } : {}),
-      ...(final.check_size
-        ? { checkSize: labelFor(CHECK_SIZE_OPTIONS, final.check_size) }
-        : {}),
+      ...(final.check_size ? { checkSize: labelFor(CHECK_SIZE_OPTIONS, final.check_size) } : {}),
     });
   }
 
   async function persist(complete: boolean) {
     setBusy(true);
     try {
-      await save({ data: { answers, complete } });
+      await save({
+        data: {
+          answers,
+          profile: { full_name: fullName, firm_name: firmName, investor_type: investorType },
+          complete,
+        },
+      });
       if (complete) {
         applyToSettings(answers);
         toast.success("Your screening desk is ready.");
@@ -211,6 +234,56 @@ function OnboardingPage() {
         <p className="mt-3 text-sm text-muted-foreground">{step.blurb}</p>
 
         <div className="mt-9">
+          {step.id === "name" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="fullName" className="label-caps">
+                  Your name
+                </label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Jane Okafor"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="firmName" className="label-caps">
+                  Fund / entity name (optional)
+                </label>
+                <Input
+                  id="firmName"
+                  value={firmName}
+                  onChange={(e) => setFirmName(e.target.value)}
+                  placeholder="Okafor Angel Capital"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {step.id === "investor" ? (
+            <div className="grid gap-2.5">
+              {INVESTOR_TYPES.map((option) => {
+                const active = investorType === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setInvestorType(option.value)}
+                    className={`cursor-pointer rounded-lg border px-4 py-3.5 text-left transition-colors ${
+                      active ? "border-accent bg-accent/10" : "border-border hover:bg-secondary"
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{option.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {option.blurb}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           {step.id === "volume" ? (
             <ChoiceList
               options={DEALS_PER_MONTH_OPTIONS}

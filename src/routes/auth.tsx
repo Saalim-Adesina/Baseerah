@@ -8,11 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { PasswordChecklist } from "@/components/password-checklist";
 import { passwordError } from "@/lib/password";
-import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
-import {
-  checkEmailForSignup,
-  syncMySubscriptionFromPolar,
-} from "@/lib/account-link.functions";
+
+import { checkEmailForSignup, syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -31,7 +28,7 @@ export const Route = createFileRoute("/auth")({
     ],
   }),
   validateSearch: (search: Record<string, unknown>) => ({
-    mode: search['mode'] === "signin" ? ("signin" as const) : ("signup" as const),
+    mode: search["mode"] === "signin" ? ("signin" as const) : ("signup" as const),
   }),
   component: AuthPage,
 });
@@ -50,9 +47,6 @@ function AuthPage() {
   }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [firmName, setFirmName] = useState("");
-  const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [busy, setBusy] = useState(false);
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -96,7 +90,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName, firm_name: firmName, investor_type: investorType },
+            data: { investor_type: "angel" },
           },
         });
         if (error) throw error;
@@ -140,48 +134,22 @@ function AuthPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-[1.1fr_1fr]">
-      <section className="hidden lg:block">
-        <p className="label-caps">For angel investors</p>
-        <h1 className="mt-2 text-4xl leading-tight">
-          Your inbox is the deal flow. Let it filter itself.
-        </h1>
-        <p className="mt-4 max-w-md text-sm text-muted-foreground">
-          Angels see more deals than any fund and have the least time. Forward every deck to your
-          private screening address and wake up to a ranked shortlist, scored against your own
-          thesis — people first.
-        </p>
-        <ul className="mt-8 space-y-3 text-sm">
-          {[
-            "One private inbox address for all inbound decks",
-            "Hundreds of deals triaged per month, no analyst needed",
-            "Founder-quality read from LinkedIn, meeting notes and your own biases",
-            "Polite, on-brand pass emails written for you",
-          ].map((item) => (
-            <li key={item} className="panel px-4 py-3">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </section>
-
+    <main className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center px-5 py-16">
       <section className="panel px-6 py-7">
-        <h2 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h2>
+        <h1 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {!isSignUp
-            ? "Sign in to your screening desk."
-            : investorType === "angel"
-              ? "14-day trial. Screen your first 25 deals before you pay a cent."
-              : "Trials are for solo angels. Syndicate and institutional accounts activate once payment is made."}
+          {isSignUp
+            ? "Set up your screening desk in a couple of minutes."
+            : "Sign in to your screening desk."}
         </p>
-
 
         <Button variant="outline" className="mt-6 w-full" onClick={handleGoogle} type="button">
           Continue with Google
         </Button>
 
         <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
+          <span className="h-px flex-1 bg-border" /> or email{" "}
+          <span className="h-px flex-1 bg-border" />
         </div>
 
         {claimNotice ? (
@@ -191,58 +159,6 @@ function AuthPage() {
         ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp ? (
-            <>
-              <div className="space-y-1.5">
-                <Label htmlFor="fullName">Your name</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jane Okafor"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="firmName">Fund / entity name (optional)</Label>
-                <Input
-                  id="firmName"
-                  value={firmName}
-                  onChange={(e) => setFirmName(e.target.value)}
-                  placeholder="Okafor Angel Capital"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>How do you invest?</Label>
-                <div className="grid gap-2">
-                  {INVESTOR_TYPES.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setInvestorType(option.value)}
-                      className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                        investorType === option.value
-                          ? "border-accent bg-accent/10"
-                          : "border-border hover:bg-secondary"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {option.label}
-                        {option.value === "angel" ? (
-                          <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary">
-                            Recommended
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {option.blurb}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : null}
-
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -287,13 +203,7 @@ function AuthPage() {
           ) : null}
 
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy
-              ? "Working…"
-              : isSignUp
-                ? investorType === "angel"
-                  ? "Start 14-day trial"
-                  : "Create account"
-                : "Sign in"}
+            {busy ? "Working…" : isSignUp ? "Create account" : "Sign in"}
           </Button>
 
           {formError ? (
