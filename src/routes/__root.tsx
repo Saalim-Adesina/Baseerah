@@ -8,10 +8,11 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useSession } from "@/lib/account";
+import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -137,69 +138,147 @@ function TopNav() {
   const isAdmin = useIsAdmin();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
+    setMobileOpen(false);
     navigate({ to: "/auth", search: { mode: "signin" }, replace: true });
   }
 
   const linkClass =
     "rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground";
+  const mobileLinkClass =
+    "block rounded-md px-3 py-2.5 text-base font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground";
+  const ctaClass =
+    "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90";
+  const mobileCtaClass =
+    "block rounded-md bg-primary px-3 py-2.5 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90";
+
+  const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
+    <>
+      {user ? (
+        <>
+          <Link to="/pipeline" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+            Pipeline
+          </Link>
+          <Link to="/deals/new" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+            New deal
+          </Link>
+          <Link to="/thesis" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+            Thesis
+          </Link>
+          <Link to="/billing" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+            Plan
+          </Link>
+          {isAdmin ? (
+            <Link to="/admin" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+              Admin
+            </Link>
+          ) : null}
+        </>
+      ) : null}
+    </>
+  );
+
+  const AuthActions = ({ mobile = false }: { mobile?: boolean }) => (
+    <>
+      {loading ? null : user ? (
+        <button type="button" onClick={handleSignOut} className={mobile ? mobileLinkClass : linkClass}>
+          Sign out
+        </button>
+      ) : (
+        <>
+          <Link
+            to="/auth"
+            search={{ mode: "signin" }}
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
+            className={mobile ? mobileCtaClass : ctaClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
+            Create account
+          </Link>
+        </>
+      )}
+    </>
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
-      <div className="mx-auto grid h-14 max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-5 sm:flex sm:gap-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-5">
         <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center gap-2.5">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
             B
           </span>
           <span className="hidden font-display text-lg tracking-tight sm:inline">Baseerah</span>
         </Link>
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-          <nav className="flex items-center gap-1">
-            {user ? (
-              <>
-                <Link to="/pipeline" className={linkClass}>
-                  Pipeline
-                </Link>
-                <Link to="/deals/new" className={linkClass}>
-                  New deal
-                </Link>
-                <Link to="/thesis" className={linkClass}>
-                  Thesis
-                </Link>
-                <Link to="/billing" className={linkClass}>
-                  Plan
-                </Link>
-                {isAdmin ? (
-                  <Link to="/admin" className={linkClass}>
-                    Admin
-                  </Link>
-                ) : null}
-              </>
-            ) : null}
-          </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
-            {loading ? null : user ? (
-              <button type="button" onClick={handleSignOut} className={linkClass}>
-                Sign out
-              </button>
-            ) : (
-              <>
-                <Link to="/auth" search={{ mode: "signin" }} className={linkClass}>
-                  Sign in
-                </Link>
-                <Link
-                  to="/auth"
-                  search={{ mode: "signup" }}
-                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+
+        {/* Desktop nav */}
+        <nav className="hidden flex-1 items-center gap-1 text-sm sm:flex">
+          <NavLinks />
+        </nav>
+        <div className="hidden items-center gap-1 sm:flex">
+          <AuthActions />
+        </div>
+
+        {/* Mobile menu trigger */}
+        <div className="flex flex-1 justify-end sm:hidden">
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen(true)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          {/* Mobile slide-out panel */}
+          <div
+            className={
+              "fixed inset-0 z-50 sm:hidden " + (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
+            }
+            aria-hidden={!mobileOpen}
+          >
+            <div
+              className={
+                "absolute inset-0 bg-black/40 transition-opacity duration-300 " +
+                (mobileOpen ? "opacity-100" : "opacity-0")
+              }
+              onClick={() => setMobileOpen(false)}
+            />
+            <div
+              className={
+                "absolute right-0 top-0 h-full w-[280px] border-l border-border bg-background p-5 shadow-xl transition-transform duration-300 " +
+                (mobileOpen ? "translate-x-0" : "translate-x-full")
+              }
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-display text-lg tracking-tight">Menu</span>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary"
                 >
-                  Create account
-                </Link>
-              </>
-            )}
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <nav className="mt-6 flex flex-col gap-1">
+                <NavLinks mobile />
+                <div className="my-3 border-t border-border" />
+                <AuthActions mobile />
+              </nav>
+            </div>
           </div>
         </div>
       </div>
