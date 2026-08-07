@@ -179,7 +179,7 @@ export function createWebhookEndpoint(input: {
     method: "POST",
     body: JSON.stringify({
       url: input.url,
-      name: input.name ?? "Meridian",
+      name: input.name ?? "Baseerah",
       format: "raw",
       events: input.events ?? WEBHOOK_EVENTS,
     }),
@@ -218,7 +218,7 @@ export async function syncWebhookEndpoint(url: string, secret?: string) {
     ? await updateWebhookEndpoint(existing.id, {
         url,
         events: WEBHOOK_EVENTS,
-        name: "Meridian",
+        name: "Baseerah",
         enabled: true,
       })
     : await createWebhookEndpoint({ url });

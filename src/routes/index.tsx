@@ -7,13 +7,13 @@ import { INVESTOR_TYPES } from "@/lib/account";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Meridian — Deal Screening for Angel Investors" },
+      { title: "Baseerah — Deal Screening for Angel Investors" },
       {
         name: "description",
         content:
-          "Angels get more decks than any fund and have the least time. Forward your inbox to Meridian and get every deal scored against your own thesis, people first.",
+          "Angels get more decks than any fund and have the least time. Forward your inbox to Baseerah and get every deal scored against your own thesis, people first.",
       },
-      { property: "og:title", content: "Meridian — Deal Screening for Angel Investors" },
+      { property: "og:title", content: "Baseerah — Deal Screening for Angel Investors" },
       {
         property: "og:description",
         content:
@@ -34,7 +34,7 @@ function Landing() {
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground">
           You see hundreds of decks a month, from warm intros, demo days and total strangers — with
-          no analyst and no time. Forward them to your private Meridian address and every deal comes
+          no analyst and no time. Forward them to your private Baseerah address and every deal comes
           back scored against your own thesis, judged on the founders first.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -147,7 +147,7 @@ function Landing() {
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-16">
-        <p className="label-caps">Who screens with Meridian</p>
+        <p className="label-caps">Who screens with Baseerah</p>
         <h2 className="mt-1 text-3xl">Angels first — everyone else welcome</h2>
         <div className="mt-6 grid gap-3 md:grid-cols-5">
           {INVESTOR_TYPES.map((type) => (

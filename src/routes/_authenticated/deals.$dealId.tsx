@@ -8,13 +8,13 @@ import { ScoreRing } from "@/components/score";
 export const Route = createFileRoute("/_authenticated/deals/$dealId")({
   head: () => ({
     meta: [
-      { title: "Deal analysis — Meridian Investment Screening" },
+      { title: "Deal analysis — Baseerah Investment Screening" },
       {
         name: "description",
         content:
           "Metric-level scoring, human-capital read, moat and unit economics analysis, IC memo and deal chat for a single startup deal.",
       },
-      { property: "og:title", content: "Deal analysis — Meridian" },
+      { property: "og:title", content: "Deal analysis — Baseerah" },
       {
         property: "og:description",
         content: "Scores, gaps, founder questions, IC memo and deal chat in one workspace.",

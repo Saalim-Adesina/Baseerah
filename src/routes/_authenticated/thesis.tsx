@@ -14,13 +14,13 @@ import { DEFAULT_THESIS, METRIC_KEYS, type Thesis } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/thesis")({
   head: () => ({
     meta: [
-      { title: "Investment thesis — Meridian Screening" },
+      { title: "Investment thesis — Baseerah Screening" },
       {
         name: "description",
         content:
           "Describe your investment thesis, preferred industries and scoring weights in natural language, and customise how the screening model thinks.",
       },
-      { property: "og:title", content: "Investment thesis — Meridian" },
+      { property: "og:title", content: "Investment thesis — Baseerah" },
       {
         property: "og:description",
         content: "Natural-language thesis, industry preferences and metric weighting.",

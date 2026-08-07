@@ -15,13 +15,13 @@ import {
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Create your angel investor account — Meridian" },
+      { title: "Create your angel investor account — Baseerah" },
       {
         name: "description",
         content:
           "Sign up to screen your angel deal inbox: forward decks, get thesis-scored triage and pass the rest politely.",
       },
-      { property: "og:title", content: "Create your angel investor account — Meridian" },
+      { property: "og:title", content: "Create your angel investor account — Baseerah" },
       {
         property: "og:description",
         content: "Screen hundreds of inbound decks a month against your personal angel thesis.",
@@ -282,7 +282,7 @@ function AuthPage() {
         </form>
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          {isSignUp ? "Already screening with Meridian?" : "New here?"}{" "}
+          {isSignUp ? "Already screening with Baseerah?" : "New here?"}{" "}
           <button
             type="button"
             className="cursor-pointer text-primary underline-offset-4 hover:underline"

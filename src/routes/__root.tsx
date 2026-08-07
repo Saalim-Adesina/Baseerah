@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Meridian — Investment Deal Screening" },
+      { title: "Baseerah — Investment Deal Screening" },
       {
         name: "description",
         content:
@@ -144,7 +144,7 @@ function TopNav() {
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
             M
           </span>
-          <span className="font-display text-lg tracking-tight">Meridian</span>
+          <span className="font-display text-lg tracking-tight">Baseerah</span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 text-sm">
           {user ? (

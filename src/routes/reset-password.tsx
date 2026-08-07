@@ -9,13 +9,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Set your password — Meridian" },
+      { title: "Set your password — Baseerah" },
       {
         name: "description",
         content:
-          "Set a password to claim the Meridian screening account attached to your subscription email.",
+          "Set a password to claim the Baseerah screening account attached to your subscription email.",
       },
-      { property: "og:title", content: "Set your password — Meridian" },
+      { property: "og:title", content: "Set your password — Baseerah" },
       {
         property: "og:description",
         content: "Claim the account attached to your subscription email.",
