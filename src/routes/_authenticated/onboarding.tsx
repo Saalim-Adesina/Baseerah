@@ -450,7 +450,48 @@ function OnboardingPage() {
               </button>
             </div>
           ) : null}
+
+          {step.id === "confirm" ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-surface p-5">
+                <p className="label-caps">Account email</p>
+                <p className="mt-2 font-mono text-sm">{user?.email}</p>
+                {emailConfirmed ? (
+                  <p className="mt-3 flex items-center gap-2 text-sm text-accent-foreground">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent">
+                      <Check className="h-3.5 w-3.5 text-accent-foreground" />
+                    </span>
+                    This address is confirmed.
+                  </p>
+                ) : (
+                  <>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      We'll send a confirmation link. Opening it brings you straight into your
+                      pipeline — no need to sign in again.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      disabled={sending}
+                      onClick={() => void sendConfirmation()}
+                    >
+                      <MailCheck className="mr-1.5 h-3.5 w-3.5" />
+                      {sent ? "Resend confirmation email" : "Send confirmation email"}
+                    </Button>
+                    {sent ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Sent — check your inbox. You can finish setup now and confirm later.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
+
 
         <div className="mt-12 flex items-center justify-between gap-3">
           <button
