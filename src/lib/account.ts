@@ -34,7 +34,7 @@ export type Subscription = {
 };
 
 export function inboxAddress(userId: string) {
-  return `deals-${userId.slice(0, 8)}@inbox.meridian.vc`;
+  return `deals-${userId.slice(0, 8)}@inbox.baseerah.dev`;
 }
 
 export function useSession() {

@@ -19,13 +19,13 @@ import { planDisplayName } from "@/lib/billing-rules";
 export const Route = createFileRoute("/_authenticated/webhook-audit")({
   head: () => ({
     meta: [
-      { title: "Billing webhook audit — Meridian" },
+      { title: "Billing webhook audit — Baseerah" },
       {
         name: "description",
         content:
           "Inspect incoming Polar billing events, how each was mapped to an account, and the plan and seat changes applied.",
       },
-      { property: "og:title", content: "Billing webhook audit — Meridian" },
+      { property: "og:title", content: "Billing webhook audit — Baseerah" },
       {
         property: "og:description",
         content: "Incoming billing events, mapping decisions and resulting plan and seat updates.",

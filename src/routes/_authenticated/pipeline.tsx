@@ -13,13 +13,13 @@ import type { Deal } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/pipeline")({
   head: () => ({
     meta: [
-      { title: "Deal Pipeline — Meridian Angel Screening" },
+      { title: "Deal Pipeline — Baseerah Angel Screening" },
       {
         name: "description",
         content:
           "Your screened angel deal flow: forwarded decks scored against your thesis, ranked and triaged.",
       },
-      { property: "og:title", content: "Deal Pipeline — Meridian Angel Screening" },
+      { property: "og:title", content: "Deal Pipeline — Baseerah Angel Screening" },
       {
         property: "og:description",
         content: "Forwarded decks scored against your angel thesis, ranked and triaged.",

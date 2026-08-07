@@ -31,12 +31,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
       {
         name: "description",
         content:
-          "Review every Meridian account, edit plans, statuses and seats, and repair billing rule violations.",
+          "Review every Baseerah account, edit plans, statuses and seats, and repair billing rule violations.",
       },
       { property: "og:title", content: "Superadmin · Accounts & subscriptions" },
       {
         property: "og:description",
-        content: "Edit plans, statuses and seats across every Meridian account.",
+        content: "Edit plans, statuses and seats across every Baseerah account.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

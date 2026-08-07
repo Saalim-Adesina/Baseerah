@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { PasswordChecklist } from "@/components/password-checklist";
+import { passwordError } from "@/lib/password";
 import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
 import {
   checkEmailForSignup,
@@ -15,13 +17,13 @@ import {
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Create your angel investor account — Meridian" },
+      { title: "Create your angel investor account — Baseerah" },
       {
         name: "description",
         content:
           "Sign up to screen your angel deal inbox: forward decks, get thesis-scored triage and pass the rest politely.",
       },
-      { property: "og:title", content: "Create your angel investor account — Meridian" },
+      { property: "og:title", content: "Create your angel investor account — Baseerah" },
       {
         property: "og:description",
         content: "Screen hundreds of inbound decks a month against your personal angel thesis.",
@@ -44,6 +46,7 @@ function AuthPage() {
   useEffect(() => {
     setIsSignUp(mode !== "signin");
     setClaimNotice(null);
+    setFormError(null);
   }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,6 +55,7 @@ function AuthPage() {
   const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [busy, setBusy] = useState(false);
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function sendReset(target: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(target, {
@@ -66,16 +70,24 @@ function AuthPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    setFormError(null);
     setBusy(true);
     try {
       if (isSignUp) {
+        // Password rules apply to new accounts only: existing passwords
+        // predate them and must still be able to sign in.
+        const invalid = passwordError(password);
+        if (invalid) {
+          setFormError(invalid);
+          return;
+        }
         // Email is the primary key across billing and the app: never let a
         // second account be created for an email that already has either.
         const check = await checkEmailForSignup({ data: { email } });
         if (check.action !== "signup") {
           setIsSignUp(false);
           setClaimNotice(check.message);
-          toast.error(check.message);
+          setFormError(check.message);
           if (check.action === "reset") await sendReset(email);
           return;
         }
@@ -93,14 +105,14 @@ function AuthPage() {
           return;
         }
         toast.success("Welcome aboard.");
-        navigate({ to: "/pipeline" });
+        navigate({ to: "/onboarding" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate({ to: "/pipeline" });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Authentication failed");
+      setFormError(error instanceof Error ? error.message : "Authentication failed");
     } finally {
       setBusy(false);
     }
@@ -111,7 +123,7 @@ function AuthPage() {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Google sign-in failed");
+      setFormError("Google sign-in failed. Try again or use your email address.");
       return;
     }
     if (result.redirected) return;
@@ -209,7 +221,7 @@ function AuthPage() {
                       onClick={() => setInvestorType(option.value)}
                       className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                         investorType === option.value
-                          ? "border-primary bg-primary/10"
+                          ? "border-accent bg-accent/10"
                           : "border-border hover:bg-secondary"
                       }`}
                     >
@@ -248,10 +260,14 @@ function AuthPage() {
               id="password"
               type="password"
               required
-              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {isSignUp ? (
+              <div className="pt-1.5">
+                <PasswordChecklist value={password} />
+              </div>
+            ) : null}
           </div>
 
           {!isSignUp ? (
@@ -279,15 +295,25 @@ function AuthPage() {
                   : "Create account"
                 : "Sign in"}
           </Button>
+
+          {formError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {formError}
+            </p>
+          ) : null}
         </form>
 
         <p className="mt-5 text-center text-sm text-muted-foreground">
-          {isSignUp ? "Already screening with Meridian?" : "New here?"}{" "}
+          {isSignUp ? "Already screening with Baseerah?" : "New here?"}{" "}
           <button
             type="button"
             className="cursor-pointer text-primary underline-offset-4 hover:underline"
             onClick={() => {
               setClaimNotice(null);
+              setFormError(null);
               setIsSignUp((value) => !value);
             }}
           >

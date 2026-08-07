@@ -18,12 +18,12 @@ import { INVESTOR_TYPES, useAccount } from "@/lib/account";
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
     meta: [
-      { title: "Plan & Billing — Meridian" },
+      { title: "Plan & Billing — Baseerah" },
       {
         name: "description",
-        content: "Manage your Meridian screening subscription, plan limits and investor profile.",
+        content: "Manage your Baseerah screening subscription, plan limits and investor profile.",
       },
-      { property: "og:title", content: "Plan & Billing — Meridian" },
+      { property: "og:title", content: "Plan & Billing — Baseerah" },
       {
         property: "og:description",
         content: "Manage your screening subscription and plan limits.",

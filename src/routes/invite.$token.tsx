@@ -10,13 +10,13 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/invite/$token")({
   head: () => ({
     meta: [
-      { title: "Join a screening team — Meridian" },
+      { title: "Join a screening team — Baseerah" },
       {
         name: "description",
         content:
-          "Accept your Meridian seat invitation and join your fund's shared deal screening pipeline.",
+          "Accept your Baseerah seat invitation and join your fund's shared deal screening pipeline.",
       },
-      { property: "og:title", content: "Join a screening team — Meridian" },
+      { property: "og:title", content: "Join a screening team — Baseerah" },
       {
         property: "og:description",
         content: "Accept your seat and join the shared deal screening pipeline.",
@@ -136,13 +136,13 @@ function InvitePage() {
             invite.
           </p>
           <Link to="/" className="mt-6 text-sm text-primary underline">
-            Back to Meridian
+            Back to Baseerah
           </Link>
         </>
       ) : (
         <>
           <h1 className="mt-1 text-4xl">
-            Join {preview.owner_name ?? "the team"} on Meridian
+            Join {preview.owner_name ?? "the team"} on Baseerah
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             You've been given a <span className="text-foreground">{preview.role}</span> seat for{" "}

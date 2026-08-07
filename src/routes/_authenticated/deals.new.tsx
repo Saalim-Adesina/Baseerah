@@ -21,13 +21,13 @@ import { ROUNDS, type Deal, type Founder, type Round } from "@/lib/types";
 export const Route = createFileRoute("/_authenticated/deals/new")({
   head: () => ({
     meta: [
-      { title: "Add a deal — Meridian Investment Screening" },
+      { title: "Add a deal — Baseerah Investment Screening" },
       {
         name: "description",
         content:
           "Upload a pitch deck and founder context to run an automated, thesis-aligned screening of a new startup deal.",
       },
-      { property: "og:title", content: "Add a deal — Meridian" },
+      { property: "og:title", content: "Add a deal — Baseerah" },
       {
         property: "og:description",
         content: "Upload a deck, add founder LinkedIn profiles and meeting notes, then screen.",
