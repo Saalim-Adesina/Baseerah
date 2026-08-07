@@ -15,6 +15,11 @@ import { useIsAdmin, useSession } from "@/lib/account";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  clearStaleChunkReloadFlag,
+  isStaleChunkError,
+  reloadOnceForStaleChunk,
+} from "../lib/stale-chunk";
 
 function NotFoundComponent() {
   return (
@@ -41,9 +46,15 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const stale = isStaleChunkError(error);
   useEffect(() => {
+    if (reloadOnceForStaleChunk(error)) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
+
+  if (stale) return null;
+
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -205,6 +216,21 @@ function RootComponent() {
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
 
+  // A deploy swaps the hashed chunks under open tabs; the next lazy route import
+  // then fails and renders a blank screen. Reload once to pick up fresh assets.
+  useEffect(() => {
+    clearStaleChunkReloadFlag();
+    const onPreloadError = (event: Event) => {
+      reloadOnceForStaleChunk((event as Event & { payload?: unknown }).payload ?? event);
+    };
+    const onRejection = (event: PromiseRejectionEvent) => reloadOnceForStaleChunk(event.reason);
+    window.addEventListener("vite:preloadError", onPreloadError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("vite:preloadError", onPreloadError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
 
 
   return (
