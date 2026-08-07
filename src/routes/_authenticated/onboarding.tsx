@@ -116,6 +116,11 @@ const STEPS: { id: StepId; title: string; blurb: string }[] = [
     title: "Connect your deal inbox",
     blurb: "Forward inbound decks here and they land in your pipeline, screened.",
   },
+  {
+    id: "confirm",
+    title: "Confirm your email",
+    blurb: "One last thing — verify the address your deals and memos are tied to.",
+  },
 ];
 
 function OnboardingPage() {
