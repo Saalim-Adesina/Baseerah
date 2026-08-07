@@ -216,6 +216,21 @@ function RootComponent() {
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
 
+  // A deploy swaps the hashed chunks under open tabs; the next lazy route import
+  // then fails and renders a blank screen. Reload once to pick up fresh assets.
+  useEffect(() => {
+    clearStaleChunkReloadFlag();
+    const onPreloadError = (event: Event) => {
+      reloadOnceForStaleChunk((event as Event & { payload?: unknown }).payload ?? event);
+    };
+    const onRejection = (event: PromiseRejectionEvent) => reloadOnceForStaleChunk(event.reason);
+    window.addEventListener("vite:preloadError", onPreloadError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("vite:preloadError", onPreloadError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
 
 
   return (
