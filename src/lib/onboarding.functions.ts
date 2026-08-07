@@ -77,11 +77,17 @@ export const saveMyOnboarding = createServerFn({ method: "POST" })
     );
     if (error) throw new Error(error.message);
 
-    const profilePatch: Record<string, unknown> = {};
-    if (data.profile?.full_name != null) profilePatch['full_name'] = data.profile.full_name;
-    if (data.profile?.firm_name != null) profilePatch['firm_name'] = data.profile.firm_name;
-    if (data.profile?.investor_type) profilePatch['investor_type'] = data.profile.investor_type;
-    if (data.complete) profilePatch['onboarding_completed_at'] = now;
+    const profilePatch: {
+      full_name?: string;
+      firm_name?: string;
+      investor_type?: InvestorType;
+      onboarding_completed_at?: string;
+    } = {};
+    if (data.profile?.full_name != null) profilePatch.full_name = data.profile.full_name;
+    if (data.profile?.firm_name != null) profilePatch.firm_name = data.profile.firm_name;
+    if (data.profile?.investor_type) profilePatch.investor_type = data.profile.investor_type;
+    if (data.complete) profilePatch.onboarding_completed_at = now;
+
 
     if (Object.keys(profilePatch).length > 0) {
       const { error: profileError } = await supabase
