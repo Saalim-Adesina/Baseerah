@@ -166,57 +166,7 @@ function AuthPage() {
         ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignUp ? (
-            <>
-              <div className="space-y-1.5">
-                <Label htmlFor="fullName">Your name</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jane Okafor"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="firmName">Fund / entity name (optional)</Label>
-                <Input
-                  id="firmName"
-                  value={firmName}
-                  onChange={(e) => setFirmName(e.target.value)}
-                  placeholder="Okafor Angel Capital"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>How do you invest?</Label>
-                <div className="grid gap-2">
-                  {INVESTOR_TYPES.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setInvestorType(option.value)}
-                      className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                        investorType === option.value
-                          ? "border-accent bg-accent/10"
-                          : "border-border hover:bg-secondary"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {option.label}
-                        {option.value === "angel" ? (
-                          <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary">
-                            Recommended
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {option.blurb}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          ) : null}
+
 
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
