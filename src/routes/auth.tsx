@@ -46,6 +46,7 @@ function AuthPage() {
   useEffect(() => {
     setIsSignUp(mode !== "signin");
     setClaimNotice(null);
+    setFormError(null);
   }, [mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -122,7 +123,7 @@ function AuthPage() {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Google sign-in failed");
+      setFormError("Google sign-in failed. Try again or use your email address.");
       return;
     }
     if (result.redirected) return;
@@ -312,6 +313,7 @@ function AuthPage() {
             className="cursor-pointer text-primary underline-offset-4 hover:underline"
             onClick={() => {
               setClaimNotice(null);
+              setFormError(null);
               setIsSignUp((value) => !value);
             }}
           >
