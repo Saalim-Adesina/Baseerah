@@ -52,6 +52,7 @@ function AuthPage() {
   const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [busy, setBusy] = useState(false);
   const [claimNotice, setClaimNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function sendReset(target: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(target, {
@@ -66,16 +67,24 @@ function AuthPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    setFormError(null);
     setBusy(true);
     try {
       if (isSignUp) {
+        // Password rules apply to new accounts only: existing passwords
+        // predate them and must still be able to sign in.
+        const invalid = passwordError(password);
+        if (invalid) {
+          setFormError(invalid);
+          return;
+        }
         // Email is the primary key across billing and the app: never let a
         // second account be created for an email that already has either.
         const check = await checkEmailForSignup({ data: { email } });
         if (check.action !== "signup") {
           setIsSignUp(false);
           setClaimNotice(check.message);
-          toast.error(check.message);
+          setFormError(check.message);
           if (check.action === "reset") await sendReset(email);
           return;
         }
@@ -93,14 +102,14 @@ function AuthPage() {
           return;
         }
         toast.success("Welcome aboard.");
-        navigate({ to: "/pipeline" });
+        navigate({ to: "/onboarding" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate({ to: "/pipeline" });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Authentication failed");
+      setFormError(error instanceof Error ? error.message : "Authentication failed");
     } finally {
       setBusy(false);
     }
