@@ -15,6 +15,11 @@ import { useIsAdmin, useSession } from "@/lib/account";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import {
+  clearStaleChunkReloadFlag,
+  isStaleChunkError,
+  reloadOnceForStaleChunk,
+} from "../lib/stale-chunk";
 
 function NotFoundComponent() {
   return (
