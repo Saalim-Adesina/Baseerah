@@ -140,40 +140,15 @@ function AuthPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-10 px-5 py-14 lg:grid-cols-[1.1fr_1fr]">
-      <section className="hidden lg:block">
-        <p className="label-caps">For angel investors</p>
-        <h1 className="mt-2 text-4xl leading-tight">
-          Your inbox is the deal flow. Let it filter itself.
-        </h1>
-        <p className="mt-4 max-w-md text-sm text-muted-foreground">
-          Angels see more deals than any fund and have the least time. Forward every deck to your
-          private screening address and wake up to a ranked shortlist, scored against your own
-          thesis — people first.
-        </p>
-        <ul className="mt-8 space-y-3 text-sm">
-          {[
-            "One private inbox address for all inbound decks",
-            "Hundreds of deals triaged per month, no analyst needed",
-            "Founder-quality read from LinkedIn, meeting notes and your own biases",
-            "Polite, on-brand pass emails written for you",
-          ].map((item) => (
-            <li key={item} className="panel px-4 py-3">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </section>
-
+    <main className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center px-5 py-16">
       <section className="panel px-6 py-7">
-        <h2 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h2>
+        <h1 className="text-2xl">{isSignUp ? "Create your account" : "Welcome back"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {!isSignUp
-            ? "Sign in to your screening desk."
-            : investorType === "angel"
-              ? "14-day trial. Screen your first 25 deals before you pay a cent."
-              : "Trials are for solo angels. Syndicate and institutional accounts activate once payment is made."}
+          {isSignUp
+            ? "Set up your screening desk in a couple of minutes."
+            : "Sign in to your screening desk."}
         </p>
+
 
 
         <Button variant="outline" className="mt-6 w-full" onClick={handleGoogle} type="button">
