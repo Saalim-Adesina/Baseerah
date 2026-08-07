@@ -94,9 +94,18 @@ function AuthPage() {
           },
         });
         if (error) throw error;
+        // Verification happens at the end of onboarding, not before it: if the
+        // signup didn't return a session, sign in straight away so the guided
+        // setup isn't skipped.
         if (!data.session) {
-          toast.success("Check your email to confirm your account.");
-          return;
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) {
+            toast.success("Check your email to confirm your account.");
+            return;
+          }
         }
         toast.success("Welcome aboard.");
         navigate({ to: "/onboarding" });

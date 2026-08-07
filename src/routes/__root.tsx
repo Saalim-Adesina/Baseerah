@@ -150,54 +150,58 @@ function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
-        <Link to={user ? "/pipeline" : "/"} className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
+      <div className="mx-auto grid h-14 max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-center gap-3 px-5 sm:flex sm:gap-6">
+        <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center gap-2.5">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
             B
           </span>
-          <span className="font-display text-lg tracking-tight">Baseerah</span>
+          <span className="hidden font-display text-lg tracking-tight sm:inline">Baseerah</span>
         </Link>
-        <nav className="flex flex-1 items-center gap-1 text-sm">
-          {user ? (
-            <>
-              <Link to="/pipeline" className={linkClass}>
-                Pipeline
-              </Link>
-              <Link to="/deals/new" className={linkClass}>
-                New deal
-              </Link>
-              <Link to="/thesis" className={linkClass}>
-                Thesis
-              </Link>
-              <Link to="/billing" className={linkClass}>
-                Plan
-              </Link>
-              {isAdmin ? (
-                <Link to="/admin" className={linkClass}>
-                  Admin
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <nav className="flex items-center gap-1">
+            {user ? (
+              <>
+                <Link to="/pipeline" className={linkClass}>
+                  Pipeline
                 </Link>
-              ) : null}
-            </>
-          ) : null}
-        </nav>
-        {loading ? null : user ? (
-          <button type="button" onClick={handleSignOut} className={linkClass}>
-            Sign out
-          </button>
-        ) : (
-          <div className="flex items-center gap-1">
-            <Link to="/auth" search={{ mode: "signin" }} className={linkClass}>
-              Sign in
-            </Link>
-            <Link
-              to="/auth"
-              search={{ mode: "signup" }}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              Create account
-            </Link>
+                <Link to="/deals/new" className={linkClass}>
+                  New deal
+                </Link>
+                <Link to="/thesis" className={linkClass}>
+                  Thesis
+                </Link>
+                <Link to="/billing" className={linkClass}>
+                  Plan
+                </Link>
+                {isAdmin ? (
+                  <Link to="/admin" className={linkClass}>
+                    Admin
+                  </Link>
+                ) : null}
+              </>
+            ) : null}
+          </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+            {loading ? null : user ? (
+              <button type="button" onClick={handleSignOut} className={linkClass}>
+                Sign out
+              </button>
+            ) : (
+              <>
+                <Link to="/auth" search={{ mode: "signin" }} className={linkClass}>
+                  Sign in
+                </Link>
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Create account
+                </Link>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </header>
   );
