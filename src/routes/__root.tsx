@@ -233,16 +233,16 @@ function TopNav() {
 
         {/* Mobile menu trigger */}
         <div className="flex flex-1 justify-end sm:hidden">
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen(true)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Open menu"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-secondary"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </SheetTrigger>
             <SheetContent side="right" className="w-[280px] p-5">
               <SheetTitle className="sr-only">Navigation menu</SheetTitle>
               <div className="mt-6 flex flex-col gap-1">
