@@ -11,7 +11,7 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin, useSession } from "@/lib/account";
+import { useIsSuperadmin, useSession } from "@/lib/account";
 import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
@@ -135,7 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function TopNav() {
   const { user, loading } = useSession();
-  const isAdmin = useIsAdmin();
+  const isSuperadmin = useIsSuperadmin();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -173,7 +173,7 @@ function TopNav() {
           <Link to="/billing" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
             Plan
           </Link>
-          {isAdmin ? (
+          {isSuperadmin ? (
             <Link to="/admin" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
               Admin
             </Link>

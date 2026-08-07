@@ -32,10 +32,10 @@ export type OrgRow = {
   warnings: string[];
 };
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+async function assertSuperadmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
-    _role: "admin",
+    _role: "superadmin",
   });
   if (error || !data) throw new Error("Forbidden — superadmin access required.");
 }
@@ -115,7 +115,7 @@ async function buildOrgs(): Promise<OrgRow[]> {
 export const listOrganizations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context as any);
+    await assertSuperadmin(context as any);
     const orgs = await buildOrgs();
     orgs.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     return {
@@ -151,7 +151,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertSuperadmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Trials are Angel-only; every other plan is pay-first.
@@ -222,7 +222,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertSuperadmin(context as any);
     if (data.userId === context.userId) throw new Error("You cannot delete your own account.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -258,7 +258,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
 export const backfillOwnerSeats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context as any);
+    await assertSuperadmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [profiles, members] = await Promise.all([
@@ -321,7 +321,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertSuperadmin(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const row = {
