@@ -136,6 +136,32 @@ function OnboardingPage() {
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const emailConfirmed = Boolean(
+    (user as { email_confirmed_at?: string | null } | null)?.email_confirmed_at,
+  );
+
+  /** The link lands the user in the app, not back on the sign-in page. */
+  async function sendConfirmation() {
+    if (!user?.email) return;
+    setSending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: user.email,
+        options: { emailRedirectTo: `${window.location.origin}/pipeline` },
+      });
+      if (error) throw error;
+      setSent(true);
+      toast.success("Confirmation email sent.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send the email.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
