@@ -57,7 +57,8 @@ type StepId =
   | "thesis"
   | "check"
   | "heard"
-  | "inbox";
+  | "inbox"
+  | "confirm";
 
 const STEPS: { id: StepId; title: string; blurb: string }[] = [
   {
