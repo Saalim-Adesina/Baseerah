@@ -46,6 +46,8 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 });
 
 type StepId =
+  | "name"
+  | "investor"
   | "volume"
   | "method"
   | "hours"
@@ -57,6 +59,16 @@ type StepId =
   | "inbox";
 
 const STEPS: { id: StepId; title: string; blurb: string }[] = [
+  {
+    id: "name",
+    title: "What's your name?",
+    blurb: "This is how memos and pass emails will sign off.",
+  },
+  {
+    id: "investor",
+    title: "How do you invest?",
+    blurb: "Sets the shape of your workspace — solo desk or a team with seats.",
+  },
   {
     id: "volume",
     title: "How many deals do you review each month?",
@@ -111,6 +123,9 @@ function OnboardingPage() {
   const save = useServerFn(saveMyOnboarding);
 
   const [answers, setAnswers] = useState<OnboardingAnswers>(EMPTY_ANSWERS);
+  const [fullName, setFullName] = useState("");
+  const [firmName, setFirmName] = useState("");
+  const [investorType, setInvestorType] = useState<InvestorType>("angel");
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -121,6 +136,9 @@ function OnboardingPage() {
       .then((state) => {
         if (!active) return;
         if (state.answers) setAnswers({ ...EMPTY_ANSWERS, ...state.answers });
+        setFullName(state.profile.full_name ?? "");
+        setFirmName(state.profile.firm_name ?? "");
+        setInvestorType(state.profile.investor_type);
         setReady(true);
       })
       .catch(() => setReady(true));
@@ -134,6 +152,7 @@ function OnboardingPage() {
 
   const set = <K extends keyof OnboardingAnswers>(key: K, value: OnboardingAnswers[K]) =>
     setAnswers((prev) => ({ ...prev, [key]: value }));
+
 
   const toggleIn = (key: "tools" | "industries", value: string) =>
     setAnswers((prev) => {
