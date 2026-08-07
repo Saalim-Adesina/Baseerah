@@ -98,8 +98,8 @@ function AdminPage() {
       <BackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-caps">Superadmin</p>
-          <h1 className="mt-1 text-4xl">Accounts &amp; subscriptions</h1>
+          <p className="label-caps">Superadmin · developer</p>
+          <h1 className="mt-1 text-4xl">All accounts &amp; subscriptions</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every edit here goes through the same rulebook the webhook uses — seats are clamped to
             the plan, and each change is stamped and written to the billing log. Your own
