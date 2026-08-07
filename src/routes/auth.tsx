@@ -248,10 +248,14 @@ function AuthPage() {
               id="password"
               type="password"
               required
-              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {isSignUp ? (
+              <div className="pt-1.5">
+                <PasswordChecklist value={password} />
+              </div>
+            ) : null}
           </div>
 
           {!isSignUp ? (
