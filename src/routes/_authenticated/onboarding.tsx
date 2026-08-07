@@ -237,7 +237,58 @@ function OnboardingPage() {
         <p className="mt-3 text-sm text-muted-foreground">{step.blurb}</p>
 
         <div className="mt-9">
+          {step.id === "name" ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="fullName" className="label-caps">
+                  Your name
+                </label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Jane Okafor"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="firmName" className="label-caps">
+                  Fund / entity name (optional)
+                </label>
+                <Input
+                  id="firmName"
+                  value={firmName}
+                  onChange={(e) => setFirmName(e.target.value)}
+                  placeholder="Okafor Angel Capital"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {step.id === "investor" ? (
+            <div className="grid gap-2.5">
+              {INVESTOR_TYPES.map((option) => {
+                const active = investorType === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setInvestorType(option.value)}
+                    className={`cursor-pointer rounded-lg border px-4 py-3.5 text-left transition-colors ${
+                      active ? "border-accent bg-accent/10" : "border-border hover:bg-secondary"
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{option.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {option.blurb}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           {step.id === "volume" ? (
+
             <ChoiceList
               options={DEALS_PER_MONTH_OPTIONS}
               value={answers.deals_per_month}
