@@ -90,27 +90,27 @@ export function useAccount() {
 }
 
 /** True when the signed-in user holds the superadmin role. */
-export function useIsAdmin() {
-  const [isAdmin, setIsAdmin] = useState(false);
+export function useIsSuperadmin() {
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
-        if (active) setIsAdmin(false);
+        if (active) setIsSuperadmin(false);
         return;
       }
       const { data } = await supabase.rpc("has_role", {
         _user_id: auth.user.id,
-        _role: "admin",
+        _role: "superadmin",
       });
-      if (active) setIsAdmin(Boolean(data));
+      if (active) setIsSuperadmin(Boolean(data));
     })();
     return () => {
       active = false;
     };
   }, []);
 
-  return isAdmin;
+  return isSuperadmin;
 }

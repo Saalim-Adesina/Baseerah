@@ -297,10 +297,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       team_invite_preview: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
-      app_role: "admin" | "member"
+      app_role: "superadmin" | "admin" | "member"
       investor_type:
         | "angel"
         | "syndicate"
@@ -434,7 +435,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "member"],
+      app_role: ["superadmin", "admin", "member"],
       investor_type: ["angel", "syndicate", "incubator", "vc", "family_office"],
     },
   },
