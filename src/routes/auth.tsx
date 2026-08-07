@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { PasswordChecklist } from "@/components/password-checklist";
 import { passwordError } from "@/lib/password";
-import { INVESTOR_TYPES, type InvestorType } from "@/lib/account";
+
 import {
   checkEmailForSignup,
   syncMySubscriptionFromPolar,
