@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/lib/account";
+import { useSession, INVESTOR_TYPES, type InvestorType } from "@/lib/account";
 import { inboxAddress } from "@/lib/account";
+
 import {
   CHECK_SIZE_OPTIONS,
   DEALS_PER_MONTH_OPTIONS,
