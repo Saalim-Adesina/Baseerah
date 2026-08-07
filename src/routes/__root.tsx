@@ -142,7 +142,7 @@ function TopNav() {
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-5">
         <Link to={user ? "/pipeline" : "/"} className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary font-display text-base text-primary-foreground">
-            M
+            B
           </span>
           <span className="font-display text-lg tracking-tight">Baseerah</span>
         </Link>
