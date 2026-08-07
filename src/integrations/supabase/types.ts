@@ -77,6 +77,60 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_responses: {
+        Row: {
+          check_size: string | null
+          completed_at: string | null
+          connect_inbox: boolean | null
+          created_at: string
+          deals_per_month: string | null
+          heard_from: string | null
+          heard_from_detail: string | null
+          hours_per_month: string | null
+          industries: string[]
+          industries_other: string | null
+          review_method: string | null
+          thesis_sentence: string | null
+          tools: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_size?: string | null
+          completed_at?: string | null
+          connect_inbox?: boolean | null
+          created_at?: string
+          deals_per_month?: string | null
+          heard_from?: string | null
+          heard_from_detail?: string | null
+          hours_per_month?: string | null
+          industries?: string[]
+          industries_other?: string | null
+          review_method?: string | null
+          thesis_sentence?: string | null
+          tools?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_size?: string | null
+          completed_at?: string | null
+          connect_inbox?: boolean | null
+          created_at?: string
+          deals_per_month?: string | null
+          heard_from?: string | null
+          heard_from_detail?: string | null
+          hours_per_month?: string | null
+          industries?: string[]
+          industries_other?: string | null
+          review_method?: string | null
+          thesis_sentence?: string | null
+          tools?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -86,6 +140,7 @@ export type Database = {
           full_name: string | null
           id: string
           investor_type: Database["public"]["Enums"]["investor_type"]
+          onboarding_completed_at: string | null
           updated_at: string
         }
         Insert: {
@@ -96,6 +151,7 @@ export type Database = {
           full_name?: string | null
           id: string
           investor_type?: Database["public"]["Enums"]["investor_type"]
+          onboarding_completed_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -106,6 +162,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           investor_type?: Database["public"]["Enums"]["investor_type"]
+          onboarding_completed_at?: string | null
           updated_at?: string
         }
         Relationships: []
