@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
   ClipboardCopy,
@@ -265,7 +266,7 @@ function DealAnalysis() {
                     </Button>
                   </div>
                   <div className="prose-memo max-w-none text-sm">
-                    <ReactMarkdown>{deal.memo}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{deal.memo}</ReactMarkdown>
                   </div>
                 </>
               ) : (
