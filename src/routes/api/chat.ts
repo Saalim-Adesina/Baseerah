@@ -20,9 +20,6 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages are required", { status: 400 });
         }
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
-
         const deal = body.deal;
         const thesis = body.thesis;
 
@@ -40,10 +37,21 @@ ${
 
 You are chatting with the investment team about this deal. Answer in markdown, be concise and specific, cite whether something is verified or founder-asserted, and flag missing information rather than inventing it.`;
 
-        const gateway = createLovableAiGatewayProvider(key);
+        let azure: ReturnType<typeof createAzureFoundryProvider>;
+        let deployment: string;
+        try {
+          azure = createAzureFoundryProvider();
+          deployment = azureDeployment();
+        } catch (error) {
+          return new Response(
+            error instanceof Error ? error.message : "Azure AI Foundry is not configured",
+            { status: 500 },
+          );
+        }
 
         const result = streamText({
-          model: gateway(CHAT_MODEL),
+          model: azure(deployment),
+
           temperature: thesis?.temperature ?? 0.35,
           system,
           messages: await convertToModelMessages(body.messages as UIMessage[]),
