@@ -19,6 +19,14 @@ function trimSlash(value: string) {
   return value.replace(/\/+$/, "");
 }
 
+/**
+ * Foundry portal copies endpoints with a `/models` (or `/openai`) suffix.
+ * The data-plane paths add their own prefix, so normalise it away.
+ */
+function foundryBaseUrl() {
+  return trimSlash(requireEnv("AZURE_FOUNDRY_ENDPOINT")).replace(/\/(models|openai)$/i, "");
+}
+
 export function azureDeployment() {
   return requireEnv("AZURE_FOUNDRY_DEPLOYMENT");
 }
@@ -29,7 +37,7 @@ export function azureDeployment() {
  * the URL selects the model — but we still pass the deployment name for logs.
  */
 export function createAzureFoundryProvider() {
-  const endpoint = trimSlash(requireEnv("AZURE_FOUNDRY_ENDPOINT"));
+  const endpoint = foundryBaseUrl();
   const apiKey = requireEnv("AZURE_FOUNDRY_API_KEY");
   const deployment = azureDeployment();
 
@@ -50,7 +58,7 @@ export function createAzureFoundryProvider() {
 
 /** Raw Azure OpenAI chat completion, for multimodal bodies the SDK can't express. */
 export async function azureChatCompletion(body: Record<string, unknown>) {
-  const endpoint = trimSlash(requireEnv("AZURE_FOUNDRY_ENDPOINT"));
+  const endpoint = foundryBaseUrl();
   const apiKey = requireEnv("AZURE_FOUNDRY_API_KEY");
   const deployment = azureDeployment();
 
