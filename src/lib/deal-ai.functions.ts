@@ -70,10 +70,10 @@ export const analyzeDeal = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const deal = data.deal as unknown as Deal;
     const thesis = data.thesis as unknown as Thesis;
-    const gateway = createLovableAiGatewayProvider(requireApiKey());
+    const azure = createAzureFoundryProvider();
 
     const { text } = await generateText({
-      model: gateway(CHAT_MODEL),
+      model: azure(azureDeployment()),
       temperature: thesis.temperature ?? 0.35,
       prompt: `${analysisPrompt(deal, thesis)}
 
@@ -97,10 +97,10 @@ export const generateMemo = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const deal = data.deal as unknown as Deal;
     const thesis = data.thesis as unknown as Thesis;
-    const gateway = createLovableAiGatewayProvider(requireApiKey());
+    const azure = createAzureFoundryProvider();
 
     const { text } = await generateText({
-      model: gateway(CHAT_MODEL),
+      model: azure(azureDeployment()),
       temperature: thesis.temperature ?? 0.35,
       prompt: `${HOUSE_RULES}
 
@@ -131,11 +131,11 @@ export const generatePassEmail = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const deal = data.deal as unknown as Deal;
     const thesis = data.thesis as unknown as Thesis;
-    const gateway = createLovableAiGatewayProvider(requireApiKey());
+    const azure = createAzureFoundryProvider();
 
     try {
       const { output } = await generateText({
-        model: gateway(CHAT_MODEL),
+        model: azure(azureDeployment()),
         temperature: 0.4,
         output: Output.object({
           schema: z.object({ subject: z.string(), body: z.string() }),
