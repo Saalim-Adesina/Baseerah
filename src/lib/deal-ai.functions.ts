@@ -176,41 +176,18 @@ export const extractDocument = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const key = requireApiKey();
-    const isImage = data.mimeType.startsWith("image/");
-
-    const content = [
-      {
-        type: "text",
-        text: "Transcribe this startup document into clean, structured markdown. Capture every slide/section heading, all numbers, metrics, charts (describe the values), team bios and financials. Do not summarise or editorialise — extract faithfully.",
-      },
-      isImage
-        ? { type: "image_url", image_url: { url: data.dataUrl } }
-        : {
-            type: "file",
-            file: { filename: data.filename, file_data: data.dataUrl },
-          },
-    ];
-
-    const response = await fetch(`${GATEWAY_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Lovable-API-Key": key,
-      },
-      body: JSON.stringify({
-        model: CHAT_MODEL,
-        messages: [{ role: "user", content }],
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Document extraction failed [${response.status}]: ${body}`);
+    if (!supportsDocumentIntelligence(data.mimeType, data.filename)) {
+      throw new Error(
+        "Document Intelligence cannot read this file type. Upload a PDF, DOCX, PPTX, XLSX, HTML or image.",
+      );
     }
 
-    const json = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    return { text: json.choices?.[0]?.message?.content ?? "" };
+    const base64Source = data.dataUrl.includes(",")
+      ? data.dataUrl.slice(data.dataUrl.indexOf(",") + 1)
+      : data.dataUrl;
+    if (!base64Source.trim()) throw new Error("The uploaded file appears to be empty.");
+
+    const markdown = await analyzeDocumentLayout(base64Source);
+    return { text: markdown };
+
   });
