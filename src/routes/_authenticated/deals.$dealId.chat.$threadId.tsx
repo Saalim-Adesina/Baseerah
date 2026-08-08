@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Loader2, MessageSquarePlus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -188,7 +189,7 @@ function ChatWindow({ dealId, threadId }: { dealId: string; threadId: string }) 
                   <p className="whitespace-pre-wrap">{textOf(message)}</p>
                 ) : (
                   <div className="prose-memo max-w-none">
-                    <ReactMarkdown>{textOf(message)}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{textOf(message)}</ReactMarkdown>
                   </div>
                 )}
               </div>

@@ -115,7 +115,15 @@ ${JSON.stringify(deal.analysis ?? {}, null, 2)}
 
 === TASK ===
 Write the Investment Committee memo in markdown for ${thesis.fundName}, authored by ${thesis.partnerName}.
-Structure: Recommendation & ask; Company overview; Why now; The team (lead with people — this is the most important section); Product & technology; Market & competition; Traction and unit economics calibrated to the ${deal.round} stage; Moat and defensibility; Scoring summary table (metric | score /10 | rationale); Key risks and mitigants; Open diligence items; Questions for the founders; Proposed next steps.
+Structure: Recommendation & ask; Company overview; Why now; The team (lead with people — this is the most important section); Product & technology; Market & competition; Traction and unit economics calibrated to the ${deal.round} stage; Moat and defensibility; Scoring summary table; Key risks and mitigants (as a table); Open diligence items; Questions for the founders; Proposed next steps.
+
+Table formatting (strict):
+- "Scoring summary" and "Key risks and mitigants" MUST be GitHub-flavoured markdown pipe tables, never bullet lists or plain text.
+- Scoring summary columns: | Metric | Score /10 | Rationale |
+- Key risks columns: | Risk | Severity | Mitigant |
+- Every table starts with a header row, then a separator row of dashes (e.g. | --- | --- | --- |), then one row per item. Each row on its own line, leading and trailing pipes included, no blank lines inside the table, and a blank line before and after the table.
+- Keep cell text on a single line: no line breaks, no bullet characters, and escape any literal pipe as \\|.
+
 Be specific, cite whether each claim is verified or founder-asserted, and never invent data.`,
     });
 
