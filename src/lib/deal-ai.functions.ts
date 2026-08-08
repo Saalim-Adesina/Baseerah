@@ -2,13 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
 import { z } from "zod";
 import {
-  CHAT_MODEL,
-  GATEWAY_BASE_URL,
-  createLovableAiGatewayProvider,
-  requireApiKey,
-} from "./ai-gateway.server";
+  analyzeDocumentLayout,
+  azureDeployment,
+  createAzureFoundryProvider,
+  supportsDocumentIntelligence,
+} from "./azure.server";
 import { analysisPrompt, dealDossier, thesisBlock, HOUSE_RULES } from "./prompts.server";
 import type { Deal, Thesis } from "./types";
+
 
 const dealSchema = z.object({}).passthrough();
 const thesisSchema = z.object({}).passthrough();
