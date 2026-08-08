@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { CHAT_MODEL, createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { azureDeployment, createAzureFoundryProvider } from "@/lib/azure.server";
 import { HOUSE_RULES, dealDossier, thesisBlock } from "@/lib/prompts.server";
 import type { Deal, Thesis } from "@/lib/types";
+
 
 type ChatRequestBody = {
   messages?: unknown;
