@@ -122,6 +122,22 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
+    // The Lovable auth broker only accepts hosted origins, so a local dev server
+    // cannot use it. Locally, go straight to the backend's own Google flow.
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+    if (isLocal) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/pipeline` },
+      });
+      if (error) {
+        setFormError(
+          "Google sign-in failed locally. Add this origin to the backend's allowed redirect URLs, or use email and password.",
+        );
+      }
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
@@ -130,6 +146,7 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
+
     // Google can create the account without passing through the signup gate,
     // so reconcile against Polar by email right away: if this person already
     // bought a plan, their subscription links to this account instead of
