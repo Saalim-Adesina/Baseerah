@@ -15,6 +15,7 @@ import { useIsSuperadmin, useSession } from "@/lib/account";
 import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
+import logoAsset from "@/assets/baseerah-logo.png.asset.json";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import {
   clearStaleChunkReloadFlag,
