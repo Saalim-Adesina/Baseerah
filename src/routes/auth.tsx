@@ -133,7 +133,7 @@ function AuthPage() {
       });
       if (error) {
         setFormError(
-          "Google sign-in failed locally. Add this origin to the backend's allowed redirect URLs, or use email and password.",
+          "Google sign-in isn't configured for localhost. Use email and password locally, or add Google OAuth credentials in Lovable Cloud Auth Settings.",
         );
       }
       return;
