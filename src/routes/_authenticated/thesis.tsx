@@ -61,8 +61,11 @@ function ThesisPage() {
           </Button>
           <Button
             onClick={() => {
-              saveThesis(draft);
-              toast.success("Thesis saved");
+              void saveThesis(draft)
+                .then(() => toast.success("Thesis saved"))
+                .catch((error: unknown) =>
+                  toast.error(error instanceof Error ? error.message : "Could not save the thesis"),
+                );
             }}
           >
             <Save className="mr-1 h-4 w-4" /> Save

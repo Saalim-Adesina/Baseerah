@@ -1,26 +1,63 @@
-# Deal Compass
+# Deal Compass (Baseerah)
 
-Build an investment screening software that automates screening of startup deals for institutional investors such as venture capitals, incubators and private equity. Deals can land through manual upload of a deal. Be able to customize the investment thesis, preference industry through natural language. Make the output be scoring each metrics, chat with deals, create IC memo, in depth analysis of each deal of what's missing, what to discuss with founders, customize the thinking of model, disregard deal with email explanation. Score each deal based on the level of round, always prioritize investing in the human beings, prioritizing linkedIn, meeting notes, personal biases to see product market fit, analyze competitors, unit metrics, find product moat.
+Investment screening software that automates screening of startup deals for
+institutional investors — venture capital, incubators, private equity. Deals
+land through manual upload or a connected Gmail inbox. The investment thesis and
+preferred industries are customised in natural language. Output scores each
+metric, supports chat with deals, IC memo generation, in-depth per-deal analysis
+of what's missing and what to discuss with founders, and polite pass emails.
 
-This project was built with [Lovable](https://lovable.dev).
+## Stack
 
-**Live app**: https://deal-oracle-00.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/1fa70be0-c738-4be1-b75e-48f5cc21ed62).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+| Concern          | Service                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| Database + Auth  | Supabase (your own project)                                  |
+| Models           | Azure AI Foundry (chat, screening, memos)                    |
+| Document parsing | Azure AI Document Intelligence (`prebuilt-layout`)           |
+| Deal inbox       | Gmail API via your own Google OAuth client                   |
+| Billing          | Polar                                                        |
+| Auth email       | Supabase Auth + your SMTP provider                           |
+| Hosting          | Vercel (Nitro `vercel` preset; override with `NITRO_PRESET`) |
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requires Node.js 20+ and [Bun](https://bun.sh) (or npm).
 
 ```sh
 git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+cd deal-oracle-00
+bun install
+cp .env.example .env.local   # fill in the values
+bun run dev
 ```
+
+`vite.config.ts` loads `.env.local` then `.env` into the server process, so
+server functions see the same variables they get in hosting.
+
+## Database
+
+`supabase/migrations/` is the schema source of truth. Apply it to a fresh
+project with the Supabase CLI:
+
+```sh
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+Regenerate types after schema changes:
+
+```sh
+supabase gen types typescript --project-id <project-ref> > src/integrations/supabase/types.ts
+```
+
+## Deploy
+
+```sh
+bun run build    # nitro emits .vercel/output
+vercel deploy
+```
+
+Set every variable from `.env.example` in the Vercel project (Production and
+Preview), and point `PUBLIC_APP_URL` at the deployed domain.
+
+See `MIGRATION.md` for the one-time cutover checklist off Lovable Cloud.

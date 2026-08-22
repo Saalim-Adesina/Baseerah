@@ -43,18 +43,18 @@ function DealAnalysis() {
         const result = (await analyzeDeal({
           data: { deal: current, thesis },
         })) as unknown as Omit<Analysis, "generatedAt">;
-        updateDeal(dealId, {
+        await updateDeal(dealId, {
           analysis: { ...result, generatedAt: Date.now() } as Analysis,
           status: current.status === "new" ? "analyzed" : current.status,
         });
         toast.success("Screening complete");
       } else if (kind === "memo") {
         const result = await generateMemo({ data: { deal: current, thesis } });
-        updateDeal(dealId, { memo: result.memo });
+        await updateDeal(dealId, { memo: result.memo });
         toast.success("IC memo drafted");
       } else {
         const result = await generatePassEmail({ data: { deal: current, thesis } });
-        updateDeal(dealId, {
+        await updateDeal(dealId, {
           passEmail: { ...result, generatedAt: Date.now() },
           status: "passed",
         });
@@ -103,7 +103,11 @@ function DealAnalysis() {
               key={status}
               size="sm"
               variant={deal.status === status ? "default" : "ghost"}
-              onClick={() => updateDeal(dealId, { status })}
+              onClick={() => {
+                void updateDeal(dealId, { status }).catch((error: unknown) =>
+                  toast.error(error instanceof Error ? error.message : "Could not update status"),
+                );
+              }}
             >
               {status}
             </Button>

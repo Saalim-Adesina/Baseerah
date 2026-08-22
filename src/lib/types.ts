@@ -149,11 +149,15 @@ export const DEFAULT_THESIS: Thesis = {
   },
 };
 
+/** Anything that survives a JSON round trip — threads are stored as jsonb. */
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
 export type Thread = {
   id: string;
   dealId: string;
   title: string;
   createdAt: number;
   updatedAt: number;
-  messages: unknown[];
+  /** AI SDK `UIMessage[]`, kept JSON-shaped for storage and transport. */
+  messages: JsonValue[];
 };

@@ -11,12 +11,12 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsSuperadmin, useSession } from "@/lib/account";
+import { useIsDeveloper, useSession } from "@/lib/account";
 import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import logoAsset from "@/assets/baseerah-logo.png.asset.json";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { reportClientError } from "../lib/client-error-reporting";
 import {
   clearStaleChunkReloadFlag,
   isStaleChunkError,
@@ -51,7 +51,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const stale = isStaleChunkError(error);
   useEffect(() => {
     if (reloadOnceForStaleChunk(error)) return;
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportClientError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   if (stale) return null;
@@ -136,7 +136,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function TopNav() {
   const { user, loading } = useSession();
-  const isSuperadmin = useIsSuperadmin();
+  const isDeveloper = useIsDeveloper();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -174,7 +174,7 @@ function TopNav() {
           <Link to="/billing" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
             Plan
           </Link>
-          {isSuperadmin ? (
+          {isDeveloper ? (
             <Link to="/admin" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
               Admin
             </Link>

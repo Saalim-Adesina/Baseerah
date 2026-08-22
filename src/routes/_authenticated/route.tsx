@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getMySeats } from "@/lib/seats.functions";
 import { getMyOnboarding } from "@/lib/onboarding.functions";
+import { syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const ensureSeats = useServerFn(getMySeats);
   const loadOnboarding = useServerFn(getMyOnboarding);
+  const syncBilling = useServerFn(syncMySubscriptionFromPolar);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
@@ -32,6 +34,14 @@ function AuthenticatedLayout() {
   useEffect(() => {
     void ensureSeats().catch(() => undefined);
   }, [ensureSeats]);
+
+  // Google sign-in creates the account without passing through the signup gate,
+  // so reconcile against Polar by email on entry: a plan bought before the
+  // account existed links here instead of leaving an orphan on the billing side.
+  // Best effort — the billing page retries on every visit.
+  useEffect(() => {
+    void syncBilling().catch(() => undefined);
+  }, [syncBilling]);
 
   // Onboarding is mandatory once, so any authenticated surface bounces to it
   // until the flow is finished.

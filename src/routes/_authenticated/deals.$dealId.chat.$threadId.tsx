@@ -19,6 +19,7 @@ import {
   useHydrated,
   useStoreValue,
 } from "@/lib/store";
+import type { Thread } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/deals/$dealId/chat/$threadId")({
   component: ThreadPage,
@@ -49,11 +50,16 @@ function ThreadPage() {
           variant="outline"
           className="w-full justify-start"
           onClick={() => {
-            const thread = createThread(dealId, `Discussion ${threads.length + 1}`);
-            void navigate({
-              to: "/deals/$dealId/chat/$threadId",
-              params: { dealId, threadId: thread.id },
-            });
+            void createThread(dealId, `Discussion ${threads.length + 1}`)
+              .then((thread) =>
+                navigate({
+                  to: "/deals/$dealId/chat/$threadId",
+                  params: { dealId, threadId: thread.id },
+                }),
+              )
+              .catch((error: unknown) =>
+                toast.error(error instanceof Error ? error.message : "Could not start a thread"),
+              );
           }}
         >
           <MessageSquarePlus className="mr-2 h-4 w-4" /> New thread
@@ -106,7 +112,8 @@ function ChatWindow({ dealId, threadId }: { dealId: string; threadId: string }) 
 
   const { messages, sendMessage, status, error } = useChat({
     id: threadId,
-    messages: (stored?.messages ?? []) as UIMessage[],
+    // Threads are stored as jsonb; the SDK's UIMessage shape is reconstructed here.
+    messages: (stored?.messages ?? []) as unknown as UIMessage[],
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ messages: msgs }) => ({
@@ -139,7 +146,12 @@ function ChatWindow({ dealId, threadId }: { dealId: string; threadId: string }) 
       thread.title.startsWith("Discussion") || thread.title === "Initial read"
         ? (textOf(firstUser) || thread.title).slice(0, 48)
         : thread.title;
-    saveThread({ ...thread, title, messages, updatedAt: Date.now() });
+    saveThread({
+      ...thread,
+      title,
+      messages: messages as unknown as Thread["messages"],
+      updatedAt: Date.now(),
+    });
   }, [messages, status, threadId]);
 
   const submit = () => {

@@ -27,13 +27,13 @@ import { APP_PLANS, APP_STATUSES, planDisplayName } from "@/lib/billing-rules";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Superadmin · Accounts & subscriptions" },
+      { title: "Developer · Accounts & subscriptions" },
       {
         name: "description",
         content:
           "Review every Baseerah account, edit plans, statuses and seats, and repair billing rule violations.",
       },
-      { property: "og:title", content: "Superadmin · Accounts & subscriptions" },
+      { property: "og:title", content: "Developer · Accounts & subscriptions" },
       {
         property: "og:description",
         content: "Edit plans, statuses and seats across every Baseerah account.",
@@ -87,7 +87,7 @@ function AdminPage() {
   if (denied) {
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <h1 className="text-3xl">Superadmin</h1>
+        <h1 className="text-3xl">Developer</h1>
         <p className="mt-3 text-sm text-muted-foreground">{denied}</p>
       </main>
     );
@@ -98,12 +98,12 @@ function AdminPage() {
       <BackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-caps">Superadmin · developer</p>
+          <p className="label-caps">Developer · developer</p>
           <h1 className="mt-1 text-4xl">All accounts &amp; subscriptions</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every edit here goes through the same rulebook the webhook uses — seats are clamped to
             the plan, and each change is stamped and written to the billing log. Your own
-            superadmin account is listed too, so you can run a plan of your own — but it can never
+            developer account is listed too, so you can run a plan of your own — but it can never
             be deleted from here.
           </p>
         </div>
@@ -371,7 +371,7 @@ function OrgCard({
               onClick={async () => {
                 setClearing(true);
                 try {
-                  await onClearSubscription(reason.trim() || "Subscription removed by superadmin");
+                  await onClearSubscription(reason.trim() || "Subscription removed by developer");
                   setPlan("angel_trial");
                   setStatus("canceled");
                   setSeats("1");
@@ -386,7 +386,7 @@ function OrgCard({
             </Button>
             <span className="text-xs text-muted-foreground">
               Removes the plan, seats and Polar subscription link. The account, its Polar customer
-              and any admin role are kept — safe to run on your own superadmin account.
+              and any admin role are kept — safe to run on your own developer account.
             </span>
           </div>
         </form>

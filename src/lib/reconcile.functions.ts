@@ -3,12 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { reconcile, type AppSubRow, type PolarSubRecord } from "@/lib/reconcile";
 
-async function assertSuperadmin(context: { supabase: any; userId: string }) {
+async function assertDeveloper(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
-    _role: "superadmin",
+    _role: "developer",
   });
-  if (error || !data) throw new Error("Forbidden — superadmin (developer) access required.");
+  if (error || !data) throw new Error("Forbidden — developer access required.");
 }
 
 async function loadReport() {
@@ -56,7 +56,7 @@ async function loadReport() {
 export const runReconciliation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     return loadReport();
   });
 
@@ -65,7 +65,7 @@ export const applyReconciliationFix = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ key: z.string().min(1) }).parse(data))
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const report = await loadReport();
     const item = report.items.find((i) => i.key === data.key);
     if (!item?.fix || !item.app) throw new Error("Nothing to repair for this entry.");
@@ -85,7 +85,7 @@ export const isBillingAdmin = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data } = await (context as any).supabase.rpc("has_role", {
       _user_id: context.userId,
-      _role: "superadmin",
+      _role: "developer",
     });
     return { admin: !!data };
   });

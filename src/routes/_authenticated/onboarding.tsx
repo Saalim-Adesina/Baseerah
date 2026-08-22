@@ -199,12 +199,12 @@ function OnboardingPage() {
     });
 
   /** Onboarding answers are settings: they write straight into the thesis. */
-  function applyToSettings(final: OnboardingAnswers) {
+  async function applyToSettings(final: OnboardingAnswers) {
     const thesis = getThesis();
     const industries = [...final.industries, final.industries_other ?? ""]
       .filter(Boolean)
       .join(", ");
-    saveThesis({
+    await saveThesis({
       ...thesis,
       ...(final.thesis_sentence ? { statement: final.thesis_sentence } : {}),
       ...(industries ? { preferredIndustries: industries } : {}),
@@ -223,7 +223,7 @@ function OnboardingPage() {
         },
       });
       if (complete) {
-        applyToSettings(answers);
+        await applyToSettings(answers);
         toast.success("Your screening desk is ready.");
         navigate({ to: "/pipeline" });
       }

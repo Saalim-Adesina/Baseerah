@@ -1,7 +1,9 @@
 // Server-only — never import in the browser.
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
-// Lovable auto-provisions APP_USER_CONNECTION_KEY_SECRET (base64, 32 bytes).
+// APP_USER_CONNECTION_KEY_SECRET is a base64 32-byte key you generate once and
+// store as a hosting secret: `openssl rand -base64 32`. Rotating it invalidates
+// every stored provider token, so users have to reconnect.
 function key(): Buffer {
   const raw = process.env["APP_USER_CONNECTION_KEY_SECRET"];
   if (!raw) throw new Error("APP_USER_CONNECTION_KEY_SECRET is not set");

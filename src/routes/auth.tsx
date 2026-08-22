@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { PasswordChecklist } from "@/components/password-checklist";
 import { passwordError } from "@/lib/password";
 
-import { checkEmailForSignup, syncMySubscriptionFromPolar } from "@/lib/account-link.functions";
+import { checkEmailForSignup } from "@/lib/account-link.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -122,41 +121,19 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    // The Lovable auth broker only accepts hosted origins, so a local dev server
-    // cannot use it. Locally, go straight to the backend's own Google flow.
-    const host = window.location.hostname;
-    const isLocal = host === "localhost" || host === "127.0.0.1" || host === "[::1]";
-    if (isLocal) {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/pipeline` },
-      });
-      if (error) {
-        setFormError(
-          "Google sign-in isn't configured for localhost. Use email and password locally, or add Google OAuth credentials in Lovable Cloud Auth Settings.",
-        );
-      }
-      return;
-    }
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    // Supabase Auth owns the Google flow: the provider credentials live in
+    // Authentication → Providers on the Supabase project, and this origin must
+    // be listed under URL Configuration → Redirect URLs (localhost included).
+    // The browser leaves the page here; /pipeline finishes the sign-in.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/pipeline` },
     });
-    if (result.error) {
-      setFormError("Google sign-in failed. Try again or use your email address.");
-      return;
+    if (error) {
+      setFormError(
+        "Google sign-in failed. Check that Google is enabled in Supabase Auth and this URL is an allowed redirect, or use your email address.",
+      );
     }
-    if (result.redirected) return;
-
-    // Google can create the account without passing through the signup gate,
-    // so reconcile against Polar by email right away: if this person already
-    // bought a plan, their subscription links to this account instead of
-    // leaving an orphan on the billing side.
-    try {
-      await syncMySubscriptionFromPolar();
-    } catch {
-      // Billing sync is best effort — the billing page retries on every visit.
-    }
-    navigate({ to: "/pipeline" });
   }
 
   return (

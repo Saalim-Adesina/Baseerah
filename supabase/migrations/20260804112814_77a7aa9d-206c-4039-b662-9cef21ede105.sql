@@ -1,9 +1,15 @@
+-- Self-test of the team_members / subscriptions RLS rules. It needs two real
+-- auth users to impersonate, so on a fresh project (or any project with fewer
+-- than two accounts) it skips instead of aborting the migration run.
 DO $$
 DECLARE a uuid; b uuid; cnt int; sid uuid;
 BEGIN
   SELECT id INTO a FROM auth.users ORDER BY created_at LIMIT 1;
   SELECT id INTO b FROM auth.users ORDER BY created_at DESC LIMIT 1;
-  IF a IS NULL OR b IS NULL OR a = b THEN RAISE EXCEPTION 'need two users to test'; END IF;
+  IF a IS NULL OR b IS NULL OR a = b THEN
+    RAISE NOTICE 'Skipping seat/subscription RLS self-test: needs two auth users.';
+    RETURN;
+  END IF;
 
   SET LOCAL ROLE authenticated;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', a, 'role','authenticated')::text, true);

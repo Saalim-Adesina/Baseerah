@@ -125,9 +125,16 @@ function NewDeal() {
       deckFileName,
       status: "new",
     };
-    saveDeal(deal);
-    toast.success(`${deal.company} added to pipeline`);
-    navigate({ to: "/deals/$dealId", params: { dealId: deal.id } });
+    // The row id comes back from the database, so navigate with the saved deal
+    // rather than the placeholder id built above.
+    saveDeal(deal)
+      .then((saved) => {
+        toast.success(`${saved.company} added to pipeline`);
+        return navigate({ to: "/deals/$dealId", params: { dealId: saved.id } });
+      })
+      .catch((error: unknown) => {
+        toast.error(error instanceof Error ? error.message : "Could not save this deal");
+      });
   };
 
   return (

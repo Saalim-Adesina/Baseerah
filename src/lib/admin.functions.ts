@@ -32,12 +32,12 @@ export type OrgRow = {
   warnings: string[];
 };
 
-async function assertSuperadmin(context: { supabase: any; userId: string }) {
+async function assertDeveloper(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
-    _role: "superadmin",
+    _role: "developer",
   });
-  if (error || !data) throw new Error("Forbidden — superadmin access required.");
+  if (error || !data) throw new Error("Forbidden — developer access required.");
 }
 
 async function audit(row: Record<string, unknown>) {
@@ -115,7 +115,7 @@ async function buildOrgs(): Promise<OrgRow[]> {
 export const listOrganizations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const orgs = await buildOrgs();
     orgs.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     return {
@@ -131,7 +131,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
   });
 
 /**
- * Superadmin edit of an account's subscription. The same rules apply as the
+ * Developer edit of an account's subscription. The same rules apply as the
  * webhook path: seats can never drop below the plan bundle or exceed its
  * ceiling, and every edit is stamped and written to the billing audit log.
  */
@@ -151,7 +151,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Trials are Angel-only; every other plan is pay-first.
@@ -199,7 +199,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
       mapping_source: "none",
       polar_customer_id: row.polar_customer_id,
       polar_subscription_id: row.polar_subscription_id,
-      notes: `Superadmin edit by ${context.userId}: ${data.reason}`,
+      notes: `Developer edit by ${context.userId}: ${data.reason}`,
       applied_row: row,
     });
 
@@ -208,7 +208,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
 
 /**
  * Permanently deletes an account: the auth user plus every row that cascades
- * from it (profile, subscription, seats, roles). Superadmins cannot delete
+ * from it (profile, subscription, seats, roles). Developers cannot delete
  * their own account, so the dashboard can never lock itself out.
  */
 export const deleteOrganization = createServerFn({ method: "POST" })
@@ -222,7 +222,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     if (data.userId === context.userId) throw new Error("You cannot delete your own account.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -248,7 +248,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       matched_user_id: data.userId,
       matched_email: email,
       mapping_source: "none",
-      notes: `Superadmin ${context.userId} deleted account ${email}.`,
+      notes: `Developer ${context.userId} deleted account ${email}.`,
     });
 
     return { ok: true };
@@ -258,7 +258,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
 export const backfillOwnerSeats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [profiles, members] = await Promise.all([
@@ -298,7 +298,7 @@ export const backfillOwnerSeats = createServerFn({ method: "POST" })
       signature_valid: true,
       outcome: "applied",
       mapping_source: "none",
-      notes: `Superadmin ${context.userId} created ${created} missing owner admin seats.`,
+      notes: `Developer ${context.userId} created ${created} missing owner admin seats.`,
     });
 
     return { created };
@@ -307,8 +307,8 @@ export const backfillOwnerSeats = createServerFn({ method: "POST" })
 /**
  * Removes an account's subscription without touching the account itself.
  * Plan, seats and Polar links are reset; the auth user, profile, seat rows and
- * — importantly — any `user_roles` entries survive, so a superadmin can drop
- * their own paid plan and stay a superadmin.
+ * — importantly — any `user_roles` entries survive, so a developer can drop
+ * their own paid plan and stay a developer.
  */
 export const clearOrganizationSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -316,12 +316,12 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
     z
       .object({
         userId: z.string().uuid(),
-        reason: z.string().trim().min(3).max(280).default("Subscription removed by superadmin"),
+        reason: z.string().trim().min(3).max(280).default("Subscription removed by developer"),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const row = {
@@ -358,7 +358,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       mapped_plan: "angel_trial",
       mapped_seats: 1,
       mapping_source: "none",
-      notes: `Superadmin ${context.userId} removed the subscription (roles kept): ${data.reason}`,
+      notes: `Developer ${context.userId} removed the subscription (roles kept): ${data.reason}`,
       applied_row: row,
     });
 

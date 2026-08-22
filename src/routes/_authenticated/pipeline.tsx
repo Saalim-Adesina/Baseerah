@@ -190,7 +190,9 @@ function Pipeline() {
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  deleteDeal(deal.id);
+                  void deleteDeal(deal.id).catch((error: unknown) =>
+                    toast.error(error instanceof Error ? error.message : "Could not delete deal"),
+                  );
                 }}
                 className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
               >

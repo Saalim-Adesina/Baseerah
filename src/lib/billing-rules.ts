@@ -3,7 +3,7 @@
  *
  * Every path that decides "what plan is this account on, what status, how many
  * seats" imports from here: the signup gate, checkout, the Polar webhook, the
- * billing auto-sync, reconciliation and the superadmin dashboard. Keeping the
+ * billing auto-sync, reconciliation and the developer dashboard. Keeping the
  * rules in one place is what stops these surfaces from drifting apart.
  */
 import { EXTRA_SEAT_PRODUCT_ID, planById, planIdFromPolarProduct, type Plan } from "@/lib/plans";

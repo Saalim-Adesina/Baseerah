@@ -3,70 +3,66 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-/** Connect the signed-in user's own Gmail account (App User Connector). */
+/** Path Google redirects back to — must match the console's authorized URI. */
+export const GMAIL_RETURN_PATH = "/oauth/gmail/return";
+
+/**
+ * Origin used to build the redirect URI. PUBLIC_APP_URL pins it in hosting
+ * (Google matches the redirect URI byte for byte); locally we fall back to the
+ * request's own origin.
+ */
+function appOrigin() {
+  const configured = process.env["PUBLIC_APP_URL"]?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+  const request = getRequest();
+  if (!request) throw new Error("OAuth must start from an app request.");
+  return new URL(request.url).origin;
+}
+
+function redirectUri() {
+  return new URL(GMAIL_RETURN_PATH, `${appOrigin()}/`).toString();
+}
+
+/** Connect the signed-in user's own Gmail account. */
 export const startGmailConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { authorizeAppUserOAuth } = await import("@/integrations/lovable/appUserConnector");
-    const { GATEWAY_BASE_URL, GMAIL_CONNECTOR_ID, GMAIL_SCOPES } = await import(
-      "@/server/gmail.server"
-    );
-    const { getConnectionKeyForUser } = await import("@/server/appUserConnections.server");
+    const { googleAuthorizeUrl } = await import("@/server/googleOAuth.server");
+    const { GMAIL_SCOPES } = await import("@/server/gmail.server");
+    const { signOAuthState } = await import("@/server/oauthState");
 
-    const clientAPIKey = process.env["GOOGLE_MAIL_APP_USER_CONNECTOR_CLIENT_API_KEY"];
-    if (!clientAPIKey) {
-      throw new Error("Gmail connector is not configured for this project.");
-    }
-
-    const request = getRequest();
-    if (!request) throw new Error("OAuth must start from an app request.");
-    const url = new URL(request.url);
-    const sandboxHost =
-      url.hostname === "localhost" ? request.headers.get("x-forwarded-host") : null;
-    const returnUrl = new URL(
-      "/oauth/gmail/return",
-      sandboxHost ? `https://${sandboxHost}` : url.origin,
-    ).toString();
-
-    const existing = await getConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID);
-    const { authorizationUrl } = await authorizeAppUserOAuth({
-      gatewayBaseUrl: GATEWAY_BASE_URL,
-      connectorId: GMAIL_CONNECTOR_ID,
-      appUserId: context.userId,
-      clientAPIKey,
-      returnUrl,
-      connectionAPIKey: existing ?? undefined,
-      credentialsConfiguration: { scopes: GMAIL_SCOPES },
+    const authorizationUrl = googleAuthorizeUrl({
+      redirectUri: redirectUri(),
+      scopes: GMAIL_SCOPES,
+      state: signOAuthState(context.userId),
     });
     return { authorizationUrl };
   });
 
-/** Exchange the one-time OAuth code and store the per-user connection key. */
+/** Exchange the one-time OAuth code and store the per-user refresh token. */
 export const completeGmailConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ code: z.string().min(1) }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ code: z.string().min(1), state: z.string().min(1) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
-    const { exchangeAppUserOAuthCode } = await import("@/integrations/lovable/appUserConnector");
-    const { GATEWAY_BASE_URL, GMAIL_CONNECTOR_ID, gmailProfile } = await import(
-      "@/server/gmail.server"
-    );
-    const { saveConnectionKeyForUser, setAccountLabel } = await import(
-      "@/server/appUserConnections.server"
-    );
+    const { exchangeGoogleCode } = await import("@/server/googleOAuth.server");
+    const { GMAIL_CONNECTOR_ID, gmailProfile } = await import("@/server/gmail.server");
+    const { saveConnectionKeyForUser, setAccountLabel } =
+      await import("@/server/appUserConnections.server");
+    const { verifyOAuthState } = await import("@/server/oauthState");
 
-    const { connectionAPIKey, connectorId } = await exchangeAppUserOAuthCode(
-      GATEWAY_BASE_URL,
-      data.code,
-    );
-    if (connectorId !== GMAIL_CONNECTOR_ID) {
-      throw new Error("OAuth completion returned the wrong connector.");
+    if (!verifyOAuthState(data.state, context.userId)) {
+      throw new Error("This Gmail connection link is invalid or expired. Start the connect again.");
     }
-    await saveConnectionKeyForUser(context.userId, connectorId, connectionAPIKey);
+
+    const { refreshToken } = await exchangeGoogleCode(data.code, redirectUri());
+    await saveConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID, refreshToken);
 
     let email: string | null = null;
     try {
-      email = (await gmailProfile(connectionAPIKey)).emailAddress ?? null;
-      if (email) await setAccountLabel(context.userId, connectorId, email);
+      email = (await gmailProfile(refreshToken)).emailAddress ?? null;
+      if (email) await setAccountLabel(context.userId, GMAIL_CONNECTOR_ID, email);
     } catch {
       // Label is cosmetic — the connection itself is stored.
     }
@@ -99,9 +95,9 @@ export const scanGmailInbox = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { GMAIL_CONNECTOR_ID, scanGmailForDecks } = await import("@/server/gmail.server");
     const { getConnectionKeyForUser } = await import("@/server/appUserConnections.server");
-    const connectionAPIKey = await getConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID);
-    if (!connectionAPIKey) throw new Error("Gmail is not connected for this account.");
-    return scanGmailForDecks(connectionAPIKey, {
+    const refreshToken = await getConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID);
+    if (!refreshToken) throw new Error("Gmail is not connected for this account.");
+    return scanGmailForDecks(refreshToken, {
       ...(data.max !== undefined ? { max: data.max } : {}),
       ...(data.skipMessageIds ? { skipMessageIds: data.skipMessageIds } : {}),
     });
@@ -110,21 +106,16 @@ export const scanGmailInbox = createServerFn({ method: "POST" })
 export const disconnectGmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { disconnectAppUser } = await import("@/integrations/lovable/appUserConnector");
-    const { GATEWAY_BASE_URL, GMAIL_CONNECTOR_ID } = await import("@/server/gmail.server");
-    const { deleteConnectionForUser, getConnectionKeyForUser } = await import(
-      "@/server/appUserConnections.server"
-    );
-    const connectionAPIKey = await getConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID);
-    if (connectionAPIKey) {
+    const { revokeGoogleToken } = await import("@/server/googleOAuth.server");
+    const { GMAIL_CONNECTOR_ID } = await import("@/server/gmail.server");
+    const { deleteConnectionForUser, getConnectionKeyForUser } =
+      await import("@/server/appUserConnections.server");
+    const refreshToken = await getConnectionKeyForUser(context.userId, GMAIL_CONNECTOR_ID);
+    if (refreshToken) {
       try {
-        await disconnectAppUser({
-          gatewayBaseUrl: GATEWAY_BASE_URL,
-          connectionAPIKey,
-          connectorId: GMAIL_CONNECTOR_ID,
-        });
+        await revokeGoogleToken(refreshToken);
       } catch {
-        // Gateway may already have dropped it — still clear our row.
+        // Google may already have dropped the grant — still clear our row.
       }
     }
     await deleteConnectionForUser(context.userId, GMAIL_CONNECTOR_ID);

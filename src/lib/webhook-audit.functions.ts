@@ -22,12 +22,12 @@ export type WebhookAuditRow = {
   applied_row: Record<string, string | number | boolean | null> | null;
 };
 
-async function assertSuperadmin(context: { supabase: any; userId: string }) {
+async function assertDeveloper(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
-    _role: "superadmin",
+    _role: "developer",
   });
-  if (error || !data) throw new Error("Forbidden — superadmin (developer) access required.");
+  if (error || !data) throw new Error("Forbidden — developer access required.");
 }
 
 /** Recent Polar webhook deliveries with their mapping decisions and results. */
@@ -43,7 +43,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       .parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperadmin(context as any);
+    await assertDeveloper(context as any);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let query = supabaseAdmin

@@ -1,19 +1,18 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig, loadEnv, type PluginOption } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsConfigPaths from "vite-tsconfig-paths";
 
-// On Lovable, server-side variables (SUPABASE_URL, Azure keys, Polar, …) are injected
-// into the process environment. Running locally there is no injector, so server
-// functions would see `process.env.SUPABASE_URL === undefined` and every
-// authenticated call would fail with "Missing Supabase environment variable(s)".
-// Load the non-VITE_ values from .env / .env.local here so local `vite dev`
-// behaves like the hosted runtime. Existing process env always wins.
+// Server-side variables (SUPABASE_*, Azure keys, Google OAuth, Polar, …) come
+// from the hosting provider's environment in production. Locally there is no
+// injector, so server functions would see `process.env.SUPABASE_URL ===
+// undefined` and every authenticated call would fail with "Missing Supabase
+// environment variable(s)". Load the non-VITE_ values from .env / .env.local
+// here so `vite dev` behaves like the deployed runtime. Existing process env
+// always wins.
 function loadServerEnvFile(file: string) {
   const path = resolve(process.cwd(), file);
   if (!existsSync(path)) return;
@@ -30,7 +29,9 @@ function loadServerEnvFile(file: string) {
     ) {
       value = value.slice(1, -1);
     }
-    if (!key || process.env[key] !== undefined) continue;
+    // Blank placeholders are ignored: an empty `FOO=""` in .env.local must not
+    // shadow a real value further down the file or in .env.
+    if (!key || value === "" || process.env[key] !== undefined) continue;
     process.env[key] = value;
   }
 }
@@ -51,10 +52,70 @@ for (const [a, b] of mirrors) {
   if (!process.env[a] && process.env[b]) process.env[a] = process.env[b];
 }
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
+export default defineConfig(async ({ command, mode }) => {
+  const plugins: PluginOption[] = [
+    tailwindcss(),
+    tsConfigPaths({ projects: ["./tsconfig.json"] }),
+    tanstackStart({
+      // Redirect TanStack Start's bundled server entry to src/server.ts (our
+      // SSR error wrapper). nitro builds from this.
+      server: { entry: "server" },
+      // Fail the build if browser code reaches into server-only modules.
+      importProtection: {
+        behavior: "error",
+        client: { files: ["**/server/**"], specifiers: ["server-only"] },
+      },
+    }),
+  ];
+
+  // Nitro turns the Start output into a deployable bundle. Build-time only —
+  // adding it to the dev server breaks HMR. NITRO_PRESET overrides the target
+  // (e.g. `node-server` for a plain VPS, `cloudflare-module` for Workers).
+  if (command === "build") {
+    const { nitro } = await import("nitro/vite");
+    plugins.push(
+      nitro({
+        preset: process.env["NITRO_PRESET"] ?? "vercel",
+        // Deck extraction polls Azure Document Intelligence for up to 4 minutes
+        // and a Gmail scan runs several of those back to back. Vercel's default
+        // function timeout kills both, so raise it. The ceiling depends on the
+        // plan — 300s is safe on Pro, Hobby caps lower.
+        vercel: { functions: { maxDuration: 300 } },
+      }),
+    );
+  }
+
+  plugins.push(viteReact());
+
+  // Inline VITE_* values so the client bundle sees them via import.meta.env.
+  const clientEnv = loadEnv(mode, process.cwd(), "VITE_");
+  const define: Record<string, string> = {};
+  for (const [key, value] of Object.entries(clientEnv)) {
+    define[`import.meta.env.${key}`] = JSON.stringify(value);
+  }
+
+  return {
+    define,
+    plugins,
+    resolve: {
+      alias: { "@": resolve(process.cwd(), "src") },
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/query-core",
+      ],
+    },
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+      ],
+    },
+  };
 });

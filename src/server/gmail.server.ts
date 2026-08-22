@@ -1,8 +1,10 @@
-// Server-only Gmail helpers built on the App User Connector gateway.
-import { callAsAppUser } from "@/integrations/lovable/appUserConnector";
+// Server-only Gmail helpers, calling the Gmail REST API directly with an
+// access token minted from the user's own stored refresh token.
+import { googleAccessToken } from "@/server/googleOAuth.server";
 import { analyzeDocumentLayout, supportsDocumentIntelligence } from "@/lib/azure.server";
 
-export const GATEWAY_BASE_URL = "https://connector-gateway.lovable.dev";
+export const GMAIL_API_BASE_URL = "https://gmail.googleapis.com";
+/** Row key in `app_user_connections` — one connection per user per provider. */
 export const GMAIL_CONNECTOR_ID = "google_mail";
 
 export const GMAIL_SCOPES = [
@@ -36,12 +38,9 @@ type GmailPart = {
   parts?: GmailPart[];
 };
 
-async function gmail<T>(connectionAPIKey: string, path: string): Promise<T> {
-  const res = await callAsAppUser({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectionAPIKey,
-    connectorId: GMAIL_CONNECTOR_ID,
-    path,
+async function gmail<T>(accessToken: string, path: string): Promise<T> {
+  const res = await fetch(`${GMAIL_API_BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   const text = await res.text();
   if (!res.ok) {
@@ -50,9 +49,10 @@ async function gmail<T>(connectionAPIKey: string, path: string): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-export async function gmailProfile(connectionAPIKey: string) {
+export async function gmailProfile(refreshToken: string) {
+  const accessToken = await googleAccessToken(refreshToken);
   return gmail<{ emailAddress: string; messagesTotal: number }>(
-    connectionAPIKey,
+    accessToken,
     "/gmail/v1/users/me/profile",
   );
 }
@@ -81,14 +81,15 @@ function base64UrlToBase64(value: string) {
  * attachment into extracted text ready to become a deal.
  */
 export async function scanGmailForDecks(
-  connectionAPIKey: string,
+  refreshToken: string,
   options: { max?: number; skipMessageIds?: string[] } = {},
 ): Promise<{ scanned: number; candidates: GmailDealCandidate[] }> {
   const max = Math.min(Math.max(options.max ?? 10, 1), 25);
   const skip = new Set(options.skipMessageIds ?? []);
+  const accessToken = await googleAccessToken(refreshToken);
 
   const list = await gmail<{ messages?: { id: string }[] }>(
-    connectionAPIKey,
+    accessToken,
     `/gmail/v1/users/me/messages?maxResults=${max * 2}&q=${encodeURIComponent(DEAL_QUERY)}`,
   );
   const ids = (list.messages ?? []).map((m) => m.id).filter((id) => !skip.has(id));
@@ -101,7 +102,7 @@ export async function scanGmailForDecks(
       snippet?: string;
       internalDate?: string;
       payload?: GmailPart;
-    }>(connectionAPIKey, `/gmail/v1/users/me/messages/${id}?format=full`);
+    }>(accessToken, `/gmail/v1/users/me/messages/${id}?format=full`);
 
     const headers = message.payload?.headers;
     const attachment = flatten(message.payload).find(
@@ -126,7 +127,7 @@ export async function scanGmailForDecks(
 
     try {
       const file = await gmail<{ data?: string }>(
-        connectionAPIKey,
+        accessToken,
         `/gmail/v1/users/me/messages/${message.id}/attachments/${attachment.body.attachmentId}`,
       );
       if (!file.data) throw new Error("Attachment came back empty.");

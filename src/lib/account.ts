@@ -89,28 +89,28 @@ export function useAccount() {
   return { profile, subscription, loading };
 }
 
-/** True when the signed-in user holds the superadmin role. */
-export function useIsSuperadmin() {
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
+/** True when the signed-in user holds the developer role. */
+export function useIsDeveloper() {
+  const [isDeveloper, setIsDeveloper] = useState(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
-        if (active) setIsSuperadmin(false);
+        if (active) setIsDeveloper(false);
         return;
       }
       const { data } = await supabase.rpc("has_role", {
         _user_id: auth.user.id,
-        _role: "superadmin",
+        _role: "developer",
       });
-      if (active) setIsSuperadmin(Boolean(data));
+      if (active) setIsDeveloper(Boolean(data));
     })();
     return () => {
       active = false;
     };
   }, []);
 
-  return isSuperadmin;
+  return isDeveloper;
 }

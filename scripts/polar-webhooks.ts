@@ -2,7 +2,7 @@
  * Manage Polar webhook endpoints from the CLI.
  *
  *   POLAR_SERVER=sandbox POLAR_SANDBOX_ACCESS_TOKEN=... \
- *     bun scripts/polar-webhooks.ts sync https://your-app.lovable.app/api/public/polar-webhook
+ *     bun scripts/polar-webhooks.ts sync https://your-domain.com/api/public/polar-webhook
  *
  * Commands: list | sync <url> | delete <id> | deliveries [endpointId]
  */

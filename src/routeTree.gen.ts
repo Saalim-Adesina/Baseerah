@@ -24,6 +24,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedDealsDealIdRouteImport } from './routes/_authenticated/deals.$dealId'
 import { Route as AuthenticatedDealsNewRouteImport } from './routes/_authenticated/deals.new'
 import { Route as ApiPublicPolarWebhookRouteImport } from './routes/api/public/polar-webhook'
+import { Route as OauthGmailReturnRouteImport } from './routes/oauth.gmail.return'
 import { Route as AuthenticatedDealsDealIdIndexRouteImport } from './routes/_authenticated/deals.$dealId.index'
 import { Route as AuthenticatedDealsDealIdChatIndexRouteImport } from './routes/_authenticated/deals.$dealId.chat.index'
 import { Route as AuthenticatedDealsDealIdChatThreadIdRouteImport } from './routes/_authenticated/deals.$dealId.chat.$threadId'
@@ -104,6 +105,11 @@ const ApiPublicPolarWebhookRoute = ApiPublicPolarWebhookRouteImport.update({
   path: '/api/public/polar-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthGmailReturnRoute = OauthGmailReturnRouteImport.update({
+  id: '/oauth/gmail/return',
+  path: '/oauth/gmail/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedDealsDealIdIndexRoute =
   AuthenticatedDealsDealIdIndexRouteImport.update({
     id: '/',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
+  '/oauth/gmail/return': typeof OauthGmailReturnRoute
   '/deals/$dealId/': typeof AuthenticatedDealsDealIdIndexRoute
   '/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/deals/$dealId/chat/': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
+  '/oauth/gmail/return': typeof OauthGmailReturnRoute
   '/deals/$dealId': typeof AuthenticatedDealsDealIdIndexRoute
   '/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/deals/$dealId/chat': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_authenticated/deals/$dealId': typeof AuthenticatedDealsDealIdRouteWithChildren
   '/_authenticated/deals/new': typeof AuthenticatedDealsNewRoute
   '/api/public/polar-webhook': typeof ApiPublicPolarWebhookRoute
+  '/oauth/gmail/return': typeof OauthGmailReturnRoute
   '/_authenticated/deals/$dealId/': typeof AuthenticatedDealsDealIdIndexRoute
   '/_authenticated/deals/$dealId/chat/$threadId': typeof AuthenticatedDealsDealIdChatThreadIdRoute
   '/_authenticated/deals/$dealId/chat/': typeof AuthenticatedDealsDealIdChatIndexRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/deals/$dealId'
     | '/deals/new'
     | '/api/public/polar-webhook'
+    | '/oauth/gmail/return'
     | '/deals/$dealId/'
     | '/deals/$dealId/chat/$threadId'
     | '/deals/$dealId/chat/'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/deals/new'
     | '/api/public/polar-webhook'
+    | '/oauth/gmail/return'
     | '/deals/$dealId'
     | '/deals/$dealId/chat/$threadId'
     | '/deals/$dealId/chat'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deals/$dealId'
     | '/_authenticated/deals/new'
     | '/api/public/polar-webhook'
+    | '/oauth/gmail/return'
     | '/_authenticated/deals/$dealId/'
     | '/_authenticated/deals/$dealId/chat/$threadId'
     | '/_authenticated/deals/$dealId/chat/'
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicPolarWebhookRoute: typeof ApiPublicPolarWebhookRoute
+  OauthGmailReturnRoute: typeof OauthGmailReturnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPolarWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/oauth/gmail/return': {
+      id: '/oauth/gmail/return'
+      path: '/oauth/gmail/return'
+      fullPath: '/oauth/gmail/return'
+      preLoaderRoute: typeof OauthGmailReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/deals/$dealId/': {
       id: '/_authenticated/deals/$dealId/'
       path: '/'
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicPolarWebhookRoute: ApiPublicPolarWebhookRoute,
+  OauthGmailReturnRoute: OauthGmailReturnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
