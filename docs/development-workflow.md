@@ -222,8 +222,18 @@ products and webhook secrets. The webhook endpoint is registered per environment
 `npm run webhooks:list` shows what is currently pointed where. After any domain
 change, re-point it: `npm run webhooks:sync -- <url>/api/public/polar-webhook`.
 
-Note `webhooks:sync` is idempotent *by name*: it moves the single sandbox
-endpoint rather than adding a second. Point it at staging and leave it there.
+Two things about `webhooks:sync` that are easy to get wrong:
+
+- It matches an existing endpoint **by URL**, not by name. Syncing to a new URL
+  therefore *creates a second endpoint* rather than moving the first. Delete the
+  old one afterwards with `npm run webhooks:delete -- <id>`, or Polar will keep
+  delivering to both.
+- It tries to pin the endpoint's signing secret to `POLAR_WEBHOOK_SECRET`, but
+  **Polar regenerates the secret** on both create and on `PATCH .../secret` and
+  ignores the value sent. So after any sync you must read the endpoint's new
+  secret from the Polar dashboard and update `POLAR_WEBHOOK_SECRET` in
+  `.env.local` and in Vercel. Until you do, every delivery fails signature
+  verification with a 401 and subscription changes silently stop applying.
 
 **Google OAuth.** Every origin you use needs its redirect URI registered in
 advance. Under the staging-testing policy that is just the two deployed origins —
