@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
-import { Plus, Search, Trash2, Sparkles, Copy, Inbox } from "lucide-react";
+import { Plus, Search, Trash2, Sparkles, Loader2, Mail, MailCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { deleteDeal, getDeals, useHydrated, useStoreValue } from "@/lib/store";
+import { deleteDeal, getDeals, refreshDeals, useHydrated, useStoreValue } from "@/lib/store";
 import { ScoreRing } from "@/components/score";
-import { inboxAddress, useAccount } from "@/lib/account";
+import { useAccount } from "@/lib/account";
+import { useGmailConnect, useGmailStatus } from "@/hooks/use-gmail";
+import { GmailScanDialog } from "@/components/gmail-scan-dialog";
 import type { Deal } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/pipeline")({
@@ -41,9 +43,10 @@ function Pipeline() {
   const selector = useCallback(() => getDeals(), []);
   const deals = useStoreValue(selector);
   const [query, setQuery] = useState("");
-  const { profile, subscription } = useAccount();
-
-  const address = profile ? (profile.deal_inbox_email ?? inboxAddress(profile.id)) : "";
+  const [scanOpen, setScanOpen] = useState(false);
+  const { subscription } = useAccount();
+  const gmail = useGmailStatus();
+  const { connect, connecting } = useGmailConnect();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -88,10 +91,20 @@ function Pipeline() {
 
       <div className="panel mt-6 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div className="flex items-center gap-3">
-          <Inbox className="h-5 w-5 text-primary" />
+          {gmail.status?.connected ? (
+            <MailCheck className="h-5 w-5 text-[var(--signal-strong)]" />
+          ) : (
+            <Mail className="h-5 w-5 text-primary" />
+          )}
           <div>
-            <p className="label-caps">Your private deal inbox</p>
-            <p className="font-mono text-sm">{address || "…"}</p>
+            <p className="label-caps">Deal inbox</p>
+            <p className="text-sm">
+              {gmail.loading
+                ? "Checking connection…"
+                : gmail.status?.connected
+                  ? (gmail.status.email ?? "Gmail connected")
+                  : "No mailbox connected"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -100,22 +113,27 @@ function Pipeline() {
               {subscription.plan} · {subscription.status}
             </Badge>
           ) : null}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (!address) return;
-              void navigator.clipboard.writeText(address);
-              toast.success("Inbox address copied — forward decks here");
-            }}
-          >
-            <Copy className="mr-1 h-3.5 w-3.5" /> Copy
-          </Button>
+          {gmail.status?.connected ? (
+            <Button variant="outline" size="sm" onClick={() => setScanOpen(true)}>
+              <RefreshCw className="mr-1 h-3.5 w-3.5" /> Scan inbox
+            </Button>
+          ) : (
+            <Button size="sm" onClick={connect} disabled={connecting || gmail.loading}>
+              {connecting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              Connect Gmail
+            </Button>
+          )}
           <Button asChild variant="ghost" size="sm">
-            <Link to="/billing">Manage plan</Link>
+            <Link to="/settings">Settings</Link>
           </Button>
         </div>
       </div>
+
+      <GmailScanDialog
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onImported={() => void refreshDeals()}
+      />
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
@@ -147,8 +165,8 @@ function Pipeline() {
             <Sparkles className="h-6 w-6 text-primary" />
             <h2 className="text-xl">No deals yet</h2>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Forward a deck to your inbox address, or add one manually — the screener will score it
-              against your thesis in one pass.
+              Connect your mailbox and scan it for decks, or add a deal manually — the screener
+              scores it against your thesis in one pass.
             </p>
             <Button asChild className="mt-2">
               <Link to="/deals/new">Add your first deal</Link>

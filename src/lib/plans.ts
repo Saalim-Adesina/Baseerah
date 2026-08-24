@@ -16,6 +16,12 @@ export type Plan = {
   extraSeatCents: number | null;
   /** Polar product id used for checkout, null for contact-sales plans. */
   polarProductId: string | null;
+  /**
+   * Screenings allowed per billing period, null = unlimited. The `features`
+   * copy above is marketing text; this is the number the server enforces, so
+   * the two must be kept in step.
+   */
+  screeningQuota: number | null;
 };
 
 export const SEAT_ROLES = [
@@ -34,7 +40,6 @@ export function seatsSupported(planId: string | undefined) {
   const plan = planById(planId);
   return !!plan && plan.seatsIncluded > 1;
 }
-
 
 export const PLANS: Plan[] = [
   {
@@ -58,6 +63,7 @@ export const PLANS: Plan[] = [
     maxSeats: 1,
     extraSeatCents: null,
     polarProductId: "c59a5ea7-e21e-4894-98a3-3ac1c1fa433e",
+    screeningQuota: 150,
   },
   {
     id: "syndicate",
@@ -77,6 +83,7 @@ export const PLANS: Plan[] = [
     maxSeats: 25,
     extraSeatCents: 2900,
     polarProductId: "964f4eb8-91b2-4289-ab4a-35d8c26d9420",
+    screeningQuota: 750,
   },
   {
     id: "institution",
@@ -96,8 +103,8 @@ export const PLANS: Plan[] = [
     maxSeats: null,
     extraSeatCents: null,
     polarProductId: "a6970a25-435f-4278-9657-bc89fd7a5598",
+    screeningQuota: null,
   },
-
 ];
 
 /** Polar product for extra seats beyond a plan's bundle. */

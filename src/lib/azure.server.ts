@@ -56,32 +56,6 @@ export function createAzureFoundryProvider() {
   });
 }
 
-/** Raw Azure OpenAI chat completion, for multimodal bodies the SDK can't express. */
-export async function azureChatCompletion(body: Record<string, unknown>) {
-  const endpoint = foundryBaseUrl();
-  const apiKey = requireEnv("AZURE_FOUNDRY_API_KEY");
-  const deployment = azureDeployment();
-
-  const response = await fetch(
-    `${endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "api-key": apiKey },
-      body: JSON.stringify(body),
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `Azure AI Foundry request failed [${response.status}]: ${await response.text()}`,
-    );
-  }
-
-  return (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-}
-
 const DOC_INTELLIGENCE_TYPES = new Set([
   "application/pdf",
   "image/jpeg",

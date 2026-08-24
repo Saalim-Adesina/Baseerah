@@ -20,7 +20,7 @@ export type SignupCheck = {
  * signing in / resetting the password, never by creating a second account.
  */
 export const checkEmailForSignup = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailInput.parse(data))
+  .validator((data: unknown) => emailInput.parse(data))
   .handler(async ({ data }): Promise<SignupCheck> => {
     const email = data.email.trim().toLowerCase();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

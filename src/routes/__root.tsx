@@ -56,8 +56,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   if (stale) return null;
 
-
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -120,6 +118,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/**
+ * Google's OAuth consent screen requires a privacy policy and terms URL, and
+ * reviewers check that both are reachable from the app itself — not just as
+ * bare URLs pasted into the console.
+ */
+function SiteFooter() {
+  return (
+    <footer className="mt-16 border-t border-border">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-xs text-muted-foreground">
+        <p>&copy; {new Date().getFullYear()} Baseerah</p>
+        <nav className="flex gap-4">
+          <Link to="/privacy" className="transition-colors hover:text-foreground">
+            Privacy
+          </Link>
+          <Link to="/terms" className="transition-colors hover:text-foreground">
+            Terms
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -162,20 +183,47 @@ function TopNav() {
     <>
       {user ? (
         <>
-          <Link to="/pipeline" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/pipeline"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             Pipeline
           </Link>
-          <Link to="/deals/new" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/deals/new"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             New deal
           </Link>
-          <Link to="/thesis" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/thesis"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             Thesis
           </Link>
-          <Link to="/billing" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/billing"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             Plan
           </Link>
+          <Link
+            to="/settings"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
+            Settings
+          </Link>
           {isDeveloper ? (
-            <Link to="/admin" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+            <Link
+              to="/admin"
+              className={mobile ? mobileLinkClass : linkClass}
+              onClick={() => mobile && setMobileOpen(false)}
+            >
               Admin
             </Link>
           ) : null}
@@ -187,7 +235,11 @@ function TopNav() {
   const AuthActions = ({ mobile = false }: { mobile?: boolean }) => (
     <>
       {loading ? null : user ? (
-        <button type="button" onClick={handleSignOut} className={mobile ? mobileLinkClass : linkClass}>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className={mobile ? mobileLinkClass : linkClass}
+        >
           Sign out
         </button>
       ) : (
@@ -248,7 +300,8 @@ function TopNav() {
           {/* Mobile slide-out panel */}
           <div
             className={
-              "fixed inset-0 z-50 sm:hidden " + (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
+              "fixed inset-0 z-50 sm:hidden " +
+              (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
             }
             aria-hidden={!mobileOpen}
           >
@@ -318,13 +371,15 @@ function RootComponent() {
     };
   }, []);
 
-
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <TopNav />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <div className="flex-1">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
+        <SiteFooter />
       </div>
       <Toaster position="top-right" />
     </QueryClientProvider>

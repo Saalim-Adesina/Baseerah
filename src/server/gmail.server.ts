@@ -2,6 +2,7 @@
 // access token minted from the user's own stored refresh token.
 import { googleAccessToken } from "@/server/googleOAuth.server";
 import { analyzeDocumentLayout, supportsDocumentIntelligence } from "@/lib/azure.server";
+import type { GmailDealCandidate } from "@/lib/types";
 
 export const GMAIL_API_BASE_URL = "https://gmail.googleapis.com";
 /** Row key in `app_user_connections` — one connection per user per provider. */
@@ -13,21 +14,15 @@ export const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
 ];
 
+/** Largest scan a user can ask for. Mirrored by the DB check constraint on
+ *  `profiles.gmail_scan_limit` and by the validator on `scanGmailInbox`. */
+export const MAX_SCAN_MESSAGES = 100;
+
 /** Only decks — Gmail search keeps the scan tight and cheap. */
 export const DEAL_QUERY =
-  "has:attachment (filename:pdf OR filename:pptx OR filename:ppt OR filename:docx) newer_than:60d -in:spam -in:trash";
+  "has:attachment (filename:pdf OR filename:pptx OR filename:ppt OR filename:docx) newer_than:365d -in:spam -in:trash";
 
-export type GmailDealCandidate = {
-  messageId: string;
-  subject: string;
-  from: string;
-  fromName: string;
-  receivedAt: number;
-  snippet: string;
-  filename: string;
-  deckText: string;
-  extractionError?: string;
-};
+export type { GmailDealCandidate } from "@/lib/types";
 
 type GmailPart = {
   partId?: string;
@@ -84,13 +79,15 @@ export async function scanGmailForDecks(
   refreshToken: string,
   options: { max?: number; skipMessageIds?: string[] } = {},
 ): Promise<{ scanned: number; candidates: GmailDealCandidate[] }> {
-  const max = Math.min(Math.max(options.max ?? 10, 1), 25);
+  const max = Math.min(Math.max(options.max ?? 10, 1), MAX_SCAN_MESSAGES);
   const skip = new Set(options.skipMessageIds ?? []);
   const accessToken = await googleAccessToken(refreshToken);
 
   const list = await gmail<{ messages?: { id: string }[] }>(
     accessToken,
-    `/gmail/v1/users/me/messages?maxResults=${max * 2}&q=${encodeURIComponent(DEAL_QUERY)}`,
+    `/gmail/v1/users/me/messages?maxResults=${Math.min(max * 2, 500)}&q=${encodeURIComponent(
+      DEAL_QUERY,
+    )}`,
   );
   const ids = (list.messages ?? []).map((m) => m.id).filter((id) => !skip.has(id));
 

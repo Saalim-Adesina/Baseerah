@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { azureDeployment, createAzureFoundryProvider } from "@/lib/azure.server";
 import { HOUSE_RULES, dealDossier, thesisBlock } from "@/lib/prompts.server";
+import { authenticateRequest, UnauthorizedError } from "@/integrations/supabase/request-auth";
 import type { Deal, Thesis } from "@/lib/types";
-
 
 type ChatRequestBody = {
   messages?: unknown;
@@ -15,6 +15,18 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Raw route handlers can't take server-function middleware, so the
+        // bearer token is validated here. Without this the endpoint is an open
+        // proxy to the Azure deployment.
+        try {
+          await authenticateRequest(request);
+        } catch (error) {
+          if (error instanceof UnauthorizedError) {
+            return new Response("Unauthorized", { status: 401 });
+          }
+          throw error;
+        }
+
         const body = (await request.json()) as ChatRequestBody;
         if (!Array.isArray(body.messages)) {
           return new Response("Messages are required", { status: 400 });

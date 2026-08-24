@@ -168,10 +168,7 @@ function NewDeal() {
             <Input value={form.geography} onChange={(e) => set("geography", e.target.value)} />
           </Field>
           <Field label="Round">
-            <Select
-              value={form.round}
-              onValueChange={(value) => set("round", value as Round)}
-            >
+            <Select value={form.round} onValueChange={(value) => set("round", value as Round)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -364,7 +361,7 @@ function NewDeal() {
       </section>
 
       <div className="mt-6 flex justify-end gap-3">
-        <Button variant="ghost" onClick={() => navigate({ to: "/" })}>
+        <Button variant="ghost" onClick={() => navigate({ to: "/pipeline" })}>
           Cancel
         </Button>
         <Button size="lg" onClick={submit} disabled={parsing}>

@@ -6,7 +6,22 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  // Build output. `.vercel` is where the nitro preset actually writes (see
+  // vite.config.ts), and `.tanstack` is the router plugin's scratch dir —
+  // without these, `eslint .` walks the whole generated bundle.
+  {
+    ignores: [
+      "dist",
+      ".output",
+      ".vinxi",
+      ".vercel",
+      ".tanstack",
+      // Generated: routeTree by the router plugin, types.ts by `npm run db:types`.
+      // Both are overwritten wholesale, so formatting them is churn.
+      "src/routeTree.gen.ts",
+      "src/integrations/supabase/types.ts",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

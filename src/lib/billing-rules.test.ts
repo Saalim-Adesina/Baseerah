@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   appStatusFor,
+  hasAccess,
   isExtraSeatMetadata,
   normalizeEmail,
+  periodElapsed,
   planForProduct,
+  screeningAllowed,
+  screeningQuotaForPlan,
   seatCeiling,
   seatsForPlan,
 } from "@/lib/billing-rules";
@@ -102,5 +106,77 @@ describe("extra-seat webhook events", () => {
     expect(decision.row["plan"]).toBe("syndicate");
     expect(decision.row["seats"]).toBe(5);
     expect(decision.row["polar_subscription_id"]).toBe("sub_plan_1");
+  });
+});
+
+describe("screening quota", () => {
+  const FIXED_NOW = Date.parse("2026-08-22T00:00:00Z");
+  const future = new Date(FIXED_NOW + 86_400_000).toISOString();
+  const past = new Date(FIXED_NOW - 86_400_000).toISOString();
+
+  it("reads the quota off the plan catalogue", () => {
+    expect(screeningQuotaForPlan("angel")).toBe(150);
+    expect(screeningQuotaForPlan("syndicate")).toBe(750);
+    expect(screeningQuotaForPlan("institution")).toBeNull();
+  });
+
+  it("gives an unknown or missing plan the trial allowance, never unlimited", () => {
+    expect(screeningQuotaForPlan("angel_trial")).toBe(10);
+    expect(screeningQuotaForPlan(undefined)).toBe(10);
+    expect(screeningQuotaForPlan("typo_plan")).toBe(10);
+  });
+
+  it("allows a paid account under its quota", () => {
+    const verdict = screeningAllowed({ plan: "angel", status: "active", used: 149 });
+    expect(verdict.allowed).toBe(true);
+    if (verdict.allowed) expect(verdict.remaining).toBe(1);
+  });
+
+  it("refuses once the quota is spent", () => {
+    const verdict = screeningAllowed({ plan: "angel", status: "active", used: 150 });
+    expect(verdict.allowed).toBe(false);
+    if (!verdict.allowed) expect(verdict.reason).toBe("quota-exceeded");
+  });
+
+  it("never refuses an unlimited plan", () => {
+    const verdict = screeningAllowed({ plan: "institution", status: "active", used: 99_999 });
+    expect(verdict.allowed).toBe(true);
+    if (verdict.allowed) expect(verdict.quota).toBeNull();
+  });
+
+  it("refuses an account with no access", () => {
+    const verdict = screeningAllowed({ plan: "angel", status: "canceled", used: 0 });
+    expect(verdict.allowed).toBe(false);
+    if (!verdict.allowed) expect(verdict.reason).toBe("no-access");
+  });
+
+  it("allows a trial that is still inside its period", () => {
+    const verdict = screeningAllowed({
+      plan: "angel_trial",
+      status: "trialing",
+      used: 0,
+      periodEnd: future,
+      now: FIXED_NOW,
+    });
+    expect(verdict.allowed).toBe(true);
+  });
+
+  it("refuses a trial whose period has elapsed even though hasAccess still says yes", () => {
+    expect(hasAccess("angel_trial", "trialing")).toBe(true);
+    const verdict = screeningAllowed({
+      plan: "angel_trial",
+      status: "trialing",
+      used: 0,
+      periodEnd: past,
+      now: FIXED_NOW,
+    });
+    expect(verdict.allowed).toBe(false);
+    if (!verdict.allowed) expect(verdict.reason).toBe("trial-expired");
+  });
+
+  it("treats a missing period end as not elapsed", () => {
+    expect(periodElapsed(null, FIXED_NOW)).toBe(false);
+    expect(periodElapsed(past, FIXED_NOW)).toBe(true);
+    expect(periodElapsed(future, FIXED_NOW)).toBe(false);
   });
 });

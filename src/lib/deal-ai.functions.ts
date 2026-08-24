@@ -8,11 +8,66 @@ import {
   supportsDocumentIntelligence,
 } from "./azure.server";
 import { analysisPrompt, dealDossier, thesisBlock, HOUSE_RULES } from "./prompts.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Deal, Thesis } from "./types";
 
+/**
+ * The prompt builders in `prompts.server.ts` read these fields unconditionally,
+ * so every one of them must survive validation with a usable value. Defaults —
+ * rather than `.optional()` — are what stop a partial payload from reaching the
+ * model layer and failing with a raw `undefined` property read.
+ * `.passthrough()` keeps forward compatibility with fields the UI adds later.
+ */
+const founderSchema = z
+  .object({
+    id: z.string().default(""),
+    name: z.string().default(""),
+    role: z.string().default(""),
+    linkedin: z.string().default(""),
+    background: z.string().default(""),
+  })
+  .passthrough();
 
-const dealSchema = z.object({}).passthrough();
-const thesisSchema = z.object({}).passthrough();
+const dealSchema = z
+  .object({
+    id: z.string().min(1),
+    createdAt: z.number().default(() => Date.now()),
+    company: z.string().min(1, "A deal needs a company name."),
+    website: z.string().default(""),
+    oneLiner: z.string().default(""),
+    sector: z.string().default(""),
+    geography: z.string().default(""),
+    round: z.string().default("Seed"),
+    raising: z.string().default(""),
+    valuation: z.string().default(""),
+    traction: z.string().default(""),
+    unitEconomics: z.string().default(""),
+    competition: z.string().default(""),
+    founders: z.array(founderSchema).default([]),
+    meetingNotes: z.string().default(""),
+    personalBias: z.string().default(""),
+    deckText: z.string().default(""),
+    deckFileName: z.string().default(""),
+    status: z.string().default("new"),
+    analysis: z.unknown().optional(),
+  })
+  .passthrough();
+
+const thesisSchema = z
+  .object({
+    fundName: z.string().default("Our fund"),
+    partnerName: z.string().default("Investment Team"),
+    statement: z.string().default(""),
+    preferredIndustries: z.string().default(""),
+    antiPortfolio: z.string().default(""),
+    stageFocus: z.string().default(""),
+    checkSize: z.string().default(""),
+    modelInstructions: z.string().default(""),
+    temperature: z.number().min(0).max(2).default(0.35),
+    // `thesisBlock` falls back to 0.5 per missing key, so an empty map is fine.
+    weights: z.record(z.number()).default({}),
+  })
+  .passthrough();
 
 const analysisSchema = z.object({
   overallScore: z.number(),
@@ -64,10 +119,13 @@ const analysisSchema = z.object({
 });
 
 export const analyzeDeal = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    z.object({ deal: dealSchema, thesis: thesisSchema }).parse(input),
-  )
-  .handler(async ({ data }) => {
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ deal: dealSchema, thesis: thesisSchema }).parse(input))
+  .handler(async ({ data, context }) => {
+    // Metered before the model call so a refused account never reaches Azure.
+    const { assertAndRecordScreening } = await import("./screening-quota.server");
+    await assertAndRecordScreening(context.userId);
+
     const deal = data.deal as unknown as Deal;
     const thesis = data.thesis as unknown as Thesis;
     const azure = createAzureFoundryProvider();
@@ -89,11 +147,9 @@ Return ONLY the raw JSON object described above. No markdown fences, no commenta
     return parsed;
   });
 
-
 export const generateMemo = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    z.object({ deal: dealSchema, thesis: thesisSchema }).parse(input),
-  )
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ deal: dealSchema, thesis: thesisSchema }).parse(input))
   .handler(async ({ data }) => {
     const deal = data.deal as unknown as Deal;
     const thesis = data.thesis as unknown as Thesis;
@@ -131,10 +187,9 @@ Be specific, cite whether each claim is verified or founder-asserted, and never 
   });
 
 export const generatePassEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    z
-      .object({ deal: dealSchema, thesis: thesisSchema, tone: z.string().optional() })
-      .parse(input),
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z.object({ deal: dealSchema, thesis: thesisSchema, tone: z.string().optional() }).parse(input),
   )
   .handler(async ({ data }) => {
     const deal = data.deal as unknown as Deal;
@@ -174,7 +229,8 @@ It must: thank them concretely, give the two or three real reasons for passing (
   });
 
 export const extractDocument = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
     z
       .object({
         filename: z.string(),
@@ -197,5 +253,4 @@ export const extractDocument = createServerFn({ method: "POST" })
 
     const markdown = await analyzeDocumentLayout(base64Source);
     return { text: markdown };
-
   });

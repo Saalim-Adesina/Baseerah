@@ -20,6 +20,7 @@ import {
   useStoreValue,
 } from "@/lib/store";
 import type { Thread } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/deals/$dealId/chat/$threadId")({
   component: ThreadPage,
@@ -116,9 +117,17 @@ function ChatWindow({ dealId, threadId }: { dealId: string; threadId: string }) 
     messages: (stored?.messages ?? []) as unknown as UIMessage[],
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      prepareSendMessagesRequest: ({ messages: msgs }) => ({
-        body: { messages: msgs, deal: getDeal(dealId), thesis: getThesis() },
-      }),
+      // `/api/chat` is a raw route handler, so the global serverFn middleware
+      // (attachSupabaseAuth) never runs for it — the bearer token has to be
+      // attached here or the request comes back 401.
+      prepareSendMessagesRequest: async ({ messages: msgs }) => {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        return {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: { messages: msgs, deal: getDeal(dealId), thesis: getThesis() },
+        };
+      },
     }),
     onError: (err) => toast.error(err.message || "Chat request failed"),
   });
@@ -168,8 +177,8 @@ function ChatWindow({ dealId, threadId }: { dealId: string; threadId: string }) 
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
             <h2 className="text-2xl">Chat with this deal</h2>
             <p className="max-w-sm text-sm text-muted-foreground">
-              The assistant has the deck, founder profiles, meeting notes, your thesis and the
-              full scorecard in context.
+              The assistant has the deck, founder profiles, meeting notes, your thesis and the full
+              scorecard in context.
             </p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((suggestion) => (

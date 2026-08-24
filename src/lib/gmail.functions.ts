@@ -1,33 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-/** Path Google redirects back to — must match the console's authorized URI. */
-export const GMAIL_RETURN_PATH = "/oauth/gmail/return";
-
-/**
- * Origin used to build the redirect URI. PUBLIC_APP_URL pins it in hosting
- * (Google matches the redirect URI byte for byte); locally we fall back to the
- * request's own origin.
- */
-function appOrigin() {
-  const configured = process.env["PUBLIC_APP_URL"]?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
-  const request = getRequest();
-  if (!request) throw new Error("OAuth must start from an app request.");
-  return new URL(request.url).origin;
-}
-
-function redirectUri() {
-  return new URL(GMAIL_RETURN_PATH, `${appOrigin()}/`).toString();
-}
 
 /** Connect the signed-in user's own Gmail account. */
 export const startGmailConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { googleAuthorizeUrl } = await import("@/server/googleOAuth.server");
+    const { assertOAuthOriginUsable, resolveAppOrigin, redirectUri } =
+      await import("@/server/appOrigin");
+
+    // Fail here, on the click, rather than at Google's consent screen with a
+    // bare redirect_uri_mismatch.
+    assertOAuthOriginUsable(resolveAppOrigin());
     const { GMAIL_SCOPES } = await import("@/server/gmail.server");
     const { signOAuthState } = await import("@/server/oauthState");
 
@@ -42,11 +27,12 @@ export const startGmailConnect = createServerFn({ method: "POST" })
 /** Exchange the one-time OAuth code and store the per-user refresh token. */
 export const completeGmailConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ code: z.string().min(1), state: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { exchangeGoogleCode } = await import("@/server/googleOAuth.server");
+    const { redirectUri } = await import("@/server/appOrigin");
     const { GMAIL_CONNECTOR_ID, gmailProfile } = await import("@/server/gmail.server");
     const { saveConnectionKeyForUser, setAccountLabel } =
       await import("@/server/appUserConnections.server");
@@ -84,10 +70,10 @@ export const getGmailStatus = createServerFn({ method: "GET" })
 
 export const scanGmailInbox = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
-        max: z.number().int().min(1).max(25).optional(),
+        max: z.number().int().min(1).max(100).optional(),
         skipMessageIds: z.array(z.string()).max(500).optional(),
       })
       .parse(input ?? {}),

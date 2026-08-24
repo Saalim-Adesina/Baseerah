@@ -11,13 +11,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Angels get more decks than any fund and have the least time. Forward your inbox to Baseerah and get every deal scored against your own thesis, people first.",
+          "Angels get more decks than any fund and have the least time. Connect your inbox to Baseerah and get every deal scored against your own thesis, people first.",
       },
       { property: "og:title", content: "Baseerah — Deal Screening for Angel Investors" },
       {
         property: "og:description",
         content:
-          "Forward your deal inbox and wake up to a ranked shortlist, scored against your angel thesis.",
+          "Connect your deal inbox and wake up to a ranked shortlist, scored against your angel thesis.",
       },
     ],
   }),
@@ -34,8 +34,8 @@ function Landing() {
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground">
           You see hundreds of decks a month, from warm intros, demo days and total strangers — with
-          no analyst and no time. Forward them to your private Baseerah address and every deal comes
-          back scored against your own thesis, judged on the founders first.
+          no analyst and no time. Connect the mailbox they land in and every deal comes back scored
+          against your own thesis, judged on the founders first.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button asChild size="lg">
@@ -58,8 +58,8 @@ function Landing() {
         {[
           {
             icon: Inbox,
-            title: "One inbox address",
-            body: "Forward or auto-forward every inbound deck to your private screening address.",
+            title: "Connect your inbox",
+            body: "Read-only access to your mailbox. Baseerah finds the decks and scores them.",
           },
           {
             icon: ScanLine,
@@ -131,11 +131,7 @@ function Landing() {
                     </li>
                   ))}
                 </ul>
-                <Button
-                  asChild
-                  className="mt-6"
-                  variant={plan.highlight ? "default" : "outline"}
-                >
+                <Button asChild className="mt-6" variant={plan.highlight ? "default" : "outline"}>
                   <Link to="/auth" search={{ mode: "signup" }}>
                     {plan.id === "institution" ? "Talk to us" : `Start with ${plan.name}`}
                   </Link>
@@ -164,7 +160,7 @@ function Landing() {
           <div>
             <h2 className="text-2xl">Ready to filter your deal flow?</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Create an account, set your thesis in plain English, start forwarding decks.
+              Create an account, set your thesis in plain English, connect your inbox.
             </p>
           </div>
           <Button asChild size="lg">

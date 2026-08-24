@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       app_user_connections: {
@@ -107,6 +132,152 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_threads: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          deal_id: string
+          id: string
+          messages: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          deal_id: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_threads_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          account_id: string
+          analysis: Json | null
+          company: string
+          competition: string
+          created_at: string
+          created_by: string | null
+          deck_file_name: string
+          deck_text: string
+          founders: Json
+          geography: string
+          gmail_message_id: string | null
+          id: string
+          meeting_notes: string
+          memo: string | null
+          one_liner: string
+          pass_email: Json | null
+          personal_bias: string
+          raising: string
+          round: string
+          sector: string
+          status: string
+          traction: string
+          unit_economics: string
+          updated_at: string
+          valuation: string
+          website: string
+        }
+        Insert: {
+          account_id: string
+          analysis?: Json | null
+          company?: string
+          competition?: string
+          created_at?: string
+          created_by?: string | null
+          deck_file_name?: string
+          deck_text?: string
+          founders?: Json
+          geography?: string
+          gmail_message_id?: string | null
+          id?: string
+          meeting_notes?: string
+          memo?: string | null
+          one_liner?: string
+          pass_email?: Json | null
+          personal_bias?: string
+          raising?: string
+          round?: string
+          sector?: string
+          status?: string
+          traction?: string
+          unit_economics?: string
+          updated_at?: string
+          valuation?: string
+          website?: string
+        }
+        Update: {
+          account_id?: string
+          analysis?: Json | null
+          company?: string
+          competition?: string
+          created_at?: string
+          created_by?: string | null
+          deck_file_name?: string
+          deck_text?: string
+          founders?: Json
+          geography?: string
+          gmail_message_id?: string | null
+          id?: string
+          meeting_notes?: string
+          memo?: string | null
+          one_liner?: string
+          pass_email?: Json | null
+          personal_bias?: string
+          raising?: string
+          round?: string
+          sector?: string
+          status?: string
+          traction?: string
+          unit_economics?: string
+          updated_at?: string
+          valuation?: string
+          website?: string
+        }
+        Relationships: []
+      }
+      local_import_marks: {
+        Row: {
+          deal_count: number
+          imported_at: string
+          user_id: string
+        }
+        Insert: {
+          deal_count?: number
+          imported_at?: string
+          user_id: string
+        }
+        Update: {
+          deal_count?: number
+          imported_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_responses: {
         Row: {
           check_size: string | null
@@ -168,6 +339,7 @@ export type Database = {
           email: string | null
           firm_name: string | null
           full_name: string | null
+          gmail_scan_limit: number
           id: string
           investor_type: Database["public"]["Enums"]["investor_type"]
           onboarding_completed_at: string | null
@@ -179,6 +351,7 @@ export type Database = {
           email?: string | null
           firm_name?: string | null
           full_name?: string | null
+          gmail_scan_limit?: number
           id: string
           investor_type?: Database["public"]["Enums"]["investor_type"]
           onboarding_completed_at?: string | null
@@ -190,6 +363,7 @@ export type Database = {
           email?: string | null
           firm_name?: string | null
           full_name?: string | null
+          gmail_scan_limit?: number
           id?: string
           investor_type?: Database["public"]["Enums"]["investor_type"]
           onboarding_completed_at?: string | null
@@ -293,6 +467,51 @@ export type Database = {
         }
         Relationships: []
       }
+      theses: {
+        Row: {
+          account_id: string
+          anti_portfolio: string
+          check_size: string
+          fund_name: string
+          model_instructions: string
+          partner_name: string
+          preferred_industries: string
+          stage_focus: string
+          statement: string
+          temperature: number
+          updated_at: string
+          weights: Json
+        }
+        Insert: {
+          account_id: string
+          anti_portfolio?: string
+          check_size?: string
+          fund_name?: string
+          model_instructions?: string
+          partner_name?: string
+          preferred_industries?: string
+          stage_focus?: string
+          statement?: string
+          temperature?: number
+          updated_at?: string
+          weights?: Json
+        }
+        Update: {
+          account_id?: string
+          anti_portfolio?: string
+          check_size?: string
+          fund_name?: string
+          model_instructions?: string
+          partner_name?: string
+          preferred_industries?: string
+          stage_focus?: string
+          statement?: string
+          temperature?: number
+          updated_at?: string
+          weights?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -320,6 +539,7 @@ export type Database = {
     }
     Functions: {
       accept_team_invite: { Args: { _token: string }; Returns: Json }
+      current_account_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -463,6 +683,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["developer", "admin", "member"],

@@ -12,7 +12,7 @@ import {
   listWebhookEndpoints,
   polarServer,
   syncWebhookEndpoint,
-} from "../src/lib/polar.server";
+} from "../src/lib/polar.server.ts";
 
 const [command, arg] = process.argv.slice(2);
 
@@ -26,7 +26,12 @@ const run = async () => {
     case "list": {
       const items = await listWebhookEndpoints();
       console.table(
-        items.map((e) => ({ id: e.id, url: e.url, events: e.events.length, secret: redact(e.secret) })),
+        items.map((e) => ({
+          id: e.id,
+          url: e.url,
+          events: e.events.length,
+          secret: redact(e.secret),
+        })),
       );
       break;
     }

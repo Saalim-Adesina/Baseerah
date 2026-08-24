@@ -1,10 +1,4 @@
-export type Round =
-  | "Pre-seed"
-  | "Seed"
-  | "Series A"
-  | "Series B"
-  | "Series C+"
-  | "Growth / PE";
+export type Round = "Pre-seed" | "Seed" | "Series A" | "Series B" | "Series C+" | "Growth / PE";
 
 export const ROUNDS: Round[] = [
   "Pre-seed",
@@ -150,7 +144,8 @@ export const DEFAULT_THESIS: Thesis = {
 };
 
 /** Anything that survives a JSON round trip — threads are stored as jsonb. */
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export type Thread = {
   id: string;
@@ -160,4 +155,22 @@ export type Thread = {
   updatedAt: number;
   /** AI SDK `UIMessage[]`, kept JSON-shaped for storage and transport. */
   messages: JsonValue[];
+};
+
+/**
+ * A deck-bearing message found by a Gmail scan, with its attachment already
+ * extracted to text. Lives here rather than in `src/server/gmail.server.ts`
+ * because the scan UI is client code, and `src/server/**` is blocked from the
+ * client bundle by the import protection in `vite.config.ts`.
+ */
+export type GmailDealCandidate = {
+  messageId: string;
+  subject: string;
+  from: string;
+  fromName: string;
+  receivedAt: number;
+  snippet: string;
+  filename: string;
+  deckText: string;
+  extractionError?: string;
 };
