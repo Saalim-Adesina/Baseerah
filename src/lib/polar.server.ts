@@ -68,6 +68,14 @@ export function createCheckoutSession(input: {
   customerEmail?: string | null;
   successUrl: string;
   metadata?: Record<string, string>;
+  /**
+   * Seat count, for products priced with `amount_type: "seat_based"`. Polar
+   * ignores it on fixed-price products, and a fixed-price product cannot be
+   * bought in quantity at all — the same id may not be repeated in `products`.
+   * So the extra-seat product must stay seat-based for multi-seat purchases to
+   * bill correctly.
+   */
+  seats?: number;
 }) {
   return polarFetch<PolarCheckout>("/checkouts/", {
     method: "POST",
@@ -77,6 +85,7 @@ export function createCheckoutSession(input: {
       customer_email: input.customerEmail ?? undefined,
       success_url: input.successUrl,
       metadata: input.metadata,
+      seats: input.seats,
     }),
   });
 }

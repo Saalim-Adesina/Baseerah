@@ -46,6 +46,8 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
     id?: string;
     status?: string;
     quantity?: number;
+    /** Seat-based subscriptions report their seat count here, not in `quantity`. */
+    seats?: number;
     product_id?: string;
     product?: { id?: string } | null;
     current_period_end?: string | null;
@@ -80,7 +82,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   // its main subscription link — they only move the seat count.
   const extraSeat = isExtraSeatProduct(productId) || isExtraSeatMetadata(d.metadata);
   const extraSeatQuantity = Math.max(
-    Number(d.quantity ?? d.metadata?.["quantity"] ?? metaSeats ?? 1) || 1,
+    Number(d.seats ?? d.quantity ?? d.metadata?.["quantity"] ?? metaSeats ?? 1) || 1,
     1,
   );
 

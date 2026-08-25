@@ -92,6 +92,39 @@ describe("extra-seat webhook events", () => {
     expect(decision.row["plan"]).toBeUndefined();
   });
 
+  // Seat-based products report their count in `seats`; `quantity` stays empty.
+  // Reading only `quantity` would silently bill N seats but grant 1.
+  it("reads the seat count from a seat-based subscription payload", () => {
+    const decision = mappingDecision({
+      type: "subscription.active",
+      data: {
+        id: "sub_seats_2",
+        status: "active",
+        product_id: seatProduct,
+        seats: 4,
+        customer: { id: "cus_1", external_id: "user-1" },
+        metadata: { kind: "extra_seat", quantity: "4", user_id: "user-1" },
+      },
+    });
+    expect(decision.extraSeat).toBe(true);
+    expect(decision.extraSeatQuantity).toBe(4);
+    expect(decision.row["plan"]).toBeUndefined();
+  });
+
+  it("falls back to metadata quantity when the payload carries no seat field", () => {
+    const decision = mappingDecision({
+      type: "subscription.active",
+      data: {
+        id: "sub_seats_3",
+        status: "active",
+        product_id: seatProduct,
+        customer: { id: "cus_1", external_id: "user-1" },
+        metadata: { kind: "extra_seat", quantity: "6", user_id: "user-1" },
+      },
+    });
+    expect(decision.extraSeatQuantity).toBe(6);
+  });
+
   it("still maps plan purchases normally", () => {
     const decision = mappingDecision({
       type: "subscription.active",
