@@ -15,7 +15,7 @@ import { useIsDeveloper, useSession } from "@/lib/account";
 import { Menu, X } from "lucide-react";
 
 import appCss from "../styles.css?url";
-import logoAsset from "@/assets/baseerah-logo.png.asset.json";
+import navbarLogo from "@/assets/navbar_logo.png";
 import { reportClientError } from "../lib/client-error-reporting";
 import {
   clearStaleChunkReloadFlag,
@@ -268,13 +268,8 @@ function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-5">
-        <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center gap-2.5">
-          <img
-            src={logoAsset.url}
-            alt="Baseerah"
-            className="h-7 w-7 shrink-0 rounded-md object-contain"
-          />
-          <span className="hidden font-display text-lg tracking-tight sm:inline">Baseerah</span>
+        <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center">
+          <img src={navbarLogo} alt="Baseerah" className="h-7 w-auto shrink-0 object-contain" />
         </Link>
 
         {/* Desktop nav */}
