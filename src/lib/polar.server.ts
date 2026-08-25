@@ -1,4 +1,17 @@
-/** Polar API client. Talks to the sandbox when POLAR_SERVER=sandbox. */
+/**
+ * Polar API client. The organisation is derived from `APP_ENV` — production
+ * talks to the live org, every other environment talks to the sandbox.
+ *
+ * There is deliberately no override and no cross-environment fallback. Host and
+ * credential used to be chosen by separate rules (`POLAR_SERVER` for the host,
+ * a `??` chain for the token), so they could disagree silently. Deriving both
+ * from one variable is what makes it impossible for a preview deploy to reach
+ * the live organisation.
+ */
+// Relative, not the "@/" alias: scripts/polar-webhooks.ts loads this module
+// directly through node --experimental-strip-types, which does not resolve
+// tsconfig path aliases.
+import { appEnv } from "../server/appEnv.ts";
 
 const HOSTS = {
   production: "https://api.polar.sh/v1",
@@ -8,32 +21,68 @@ const HOSTS = {
 export type PolarServer = keyof typeof HOSTS;
 
 export function polarServer(): PolarServer {
-  return process.env["POLAR_SERVER"] === "sandbox" ? "sandbox" : "production";
+  return appEnv() === "production" ? "production" : "sandbox";
 }
 
 function apiBase() {
   return HOSTS[polarServer()];
 }
 
+/** The API host in use, so CLI output can show what it is pointed at. */
+export function polarApiBase() {
+  return apiBase();
+}
+
+/** Env var names per environment, so errors can name the exact missing one. */
+function credentialNames() {
+  return polarServer() === "production"
+    ? {
+        token: "POLAR_PRODUCTION_ACCESS_TOKEN",
+        secret: "POLAR_PRODUCTION_WEBHOOK_SECRET",
+        legacyToken: "POLAR_ACCESS_TOKEN",
+        legacySecret: "POLAR_WEBHOOK_SECRET",
+      }
+    : {
+        token: "POLAR_SANDBOX_ACCESS_TOKEN",
+        secret: "POLAR_SANDBOX_WEBHOOK_SECRET",
+        legacyToken: "POLAR_ACCESS_TOKEN",
+        legacySecret: "POLAR_WEBHOOK_SECRET",
+      };
+}
+
+/**
+ * A renamed variable is a hard failure with a pointed message rather than a
+ * silent fallback — falling back to the old name is how a deploy ends up using
+ * one environment's credential against the other's host.
+ */
+function missingCredential(name: string, legacy: string): string {
+  const renamed =
+    process.env[legacy] !== undefined
+      ? ` ${legacy} is set but no longer read — it was replaced by ${name}.`
+      : "";
+  return (
+    `APP_ENV=${appEnv()} selects the Polar ${polarServer()} organisation, ` +
+    `but ${name} is not set.${renamed} ` +
+    `Set it in Vercel → Settings → Environment Variables for this environment, or in .env.local.`
+  );
+}
+
 function token() {
-  const sandbox = polarServer() === "sandbox";
-  const t = sandbox
-    ? (process.env["POLAR_SANDBOX_ACCESS_TOKEN"] ?? process.env["POLAR_ACCESS_TOKEN"])
-    : process.env["POLAR_ACCESS_TOKEN"];
-  if (!t)
-    throw new Error(
-      sandbox
-        ? "POLAR_SANDBOX_ACCESS_TOKEN is not configured"
-        : "POLAR_ACCESS_TOKEN is not configured",
-    );
-  return t;
+  const names = credentialNames();
+  const value = process.env[names.token];
+  if (!value) throw new Error(missingCredential(names.token, names.legacyToken));
+  return value;
 }
 
 /** Webhook signing secret for the active environment. */
 export function polarWebhookSecret() {
-  return polarServer() === "sandbox"
-    ? (process.env["POLAR_SANDBOX_WEBHOOK_SECRET"] ?? process.env["POLAR_WEBHOOK_SECRET"])
-    : process.env["POLAR_WEBHOOK_SECRET"];
+  return process.env[credentialNames().secret];
+}
+
+/** Why the webhook secret is unusable, for server-side logging. */
+export function polarWebhookSecretError() {
+  const names = credentialNames();
+  return missingCredential(names.secret, names.legacySecret);
 }
 
 async function polarFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -139,7 +188,6 @@ export function createCustomer(email: string, externalCustomerId?: string | null
   });
 }
 
-
 /* ------------------------------------------------------------------ */
 /* Webhook endpoint management (POST/PATCH /v1/webhooks/endpoints)      */
 /* ------------------------------------------------------------------ */
@@ -173,9 +221,7 @@ export const WEBHOOK_EVENTS = [
 ] as const;
 
 export async function listWebhookEndpoints() {
-  const res = await polarFetch<{ items: PolarWebhookEndpoint[] }>(
-    "/webhooks/endpoints?limit=100",
-  );
+  const res = await polarFetch<{ items: PolarWebhookEndpoint[] }>("/webhooks/endpoints?limit=100");
   return res.items ?? [];
 }
 
@@ -248,16 +294,16 @@ export function listWebhookDeliveries(endpointId?: string) {
 /* Product ids                                                          */
 /* ------------------------------------------------------------------ */
 
-/**
- * Sandbox products are distinct from live ones, so allow env overrides such as
- * POLAR_SANDBOX_PRODUCT_ANGEL / _SYNDICATE / _INSTITUTION / _EXTRA_SEAT.
- */
-export function resolveProductId(key: string, fallback: string | null) {
-  if (polarServer() === "sandbox") {
-    const override = process.env[`POLAR_SANDBOX_PRODUCT_${key.toUpperCase()}`];
-    if (override) return override;
-  }
-  return fallback;
+export type PolarProduct = {
+  id: string;
+  name: string;
+  is_archived?: boolean;
+  prices?: { amount_type?: string; price_amount?: number }[];
+};
+
+/** One product, for the /environment diagnostics check. */
+export function getProduct(id: string) {
+  return polarFetch<PolarProduct>(`/products/${id}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -314,9 +360,7 @@ export async function findCustomerByEmail(email: string): Promise<PolarCustomer 
 }
 
 /** The most relevant Polar subscription for an email, if any. */
-export async function findSubscriptionByEmail(
-  email: string,
-): Promise<PolarSubscription | null> {
+export async function findSubscriptionByEmail(email: string): Promise<PolarSubscription | null> {
   const customer = await findCustomerByEmail(email);
   if (!customer) return null;
   const res = await polarFetch<{ items: PolarSubscription[] }>(
@@ -324,7 +368,11 @@ export async function findSubscriptionByEmail(
   );
   const items = (res.items ?? []).map((s) => ({
     ...s,
-    customer: s.customer ?? { id: customer.id, email: customer.email, external_id: customer.external_id ?? null },
+    customer: s.customer ?? {
+      id: customer.id,
+      email: customer.email,
+      external_id: customer.external_id ?? null,
+    },
   }));
   const rank = (s: PolarSubscription) =>
     s.status === "active" ? 0 : s.status === "trialing" ? 1 : s.status === "past_due" ? 2 : 3;

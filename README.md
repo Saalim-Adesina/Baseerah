@@ -51,18 +51,28 @@ value) so the next person knows it exists.
 | `test`                 | Run the Vitest suite once                                        |
 | `test:watch`           | Vitest in watch mode                                             |
 | `typecheck`            | `tsc --noEmit` — the build does not type-check on its own        |
+| `env:check`            | Validate the env vars this `APP_ENV` needs; `-- --env=production` to check the other |
 | `lint` / `format`      | ESLint / Prettier                                                |
 | `webhooks:list`        | List the Polar webhook endpoints on the account                  |
 | `webhooks:sync -- <url>` | Point Polar's webhook at `<url>`, creating or updating it      |
 | `webhooks:delete -- <id>` | Remove a webhook endpoint by id                               |
 | `webhooks:deliveries`  | Recent webhook deliveries, for debugging missed events           |
+
+All `webhooks:*` commands accept `-- --env=sandbox` or `-- --env=production` to
+choose the Polar organisation for that one command.
 | `db:types`             | Regenerate `src/integrations/supabase/types.ts` from the database |
 
 The `webhooks:*` scripts run `scripts/polar-webhooks.ts` through Node's type
-stripping and load `.env` then `.env.local`, so `POLAR_ACCESS_TOKEN` and
-`POLAR_SERVER` come from the same files the dev server uses. `db:types` runs
-against the linked project (`supabase/config.toml`) and needs the Supabase CLI
-logged in and linked.
+stripping and load `.env` then `.env.local`, so the Polar credentials come from
+the same files the dev server uses. Which organisation they target is derived
+from `APP_ENV` (`production`, or `preview` for everything else), overridable per
+command with `--env=`. `db:types` runs against the linked project
+(`supabase/config.toml`) and needs the Supabase CLI logged in and linked.
+
+`APP_ENV` is the one switch that selects the Polar organisation, its credentials
+and its product ids together. The developer-only `/environment` page shows what a
+running deployment actually resolved, including whether each product id exists in
+the Polar organisation being used.
 
 ## Database
 

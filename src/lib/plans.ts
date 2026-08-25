@@ -14,8 +14,8 @@ export type Plan = {
   maxSeats: number | null;
   /** Price per additional seat in cents, null when extras aren't billed. */
   extraSeatCents: number | null;
-  /** Polar product id used for checkout, null for contact-sales plans. */
-  polarProductId: string | null;
+  /** Whether this plan can be bought online, or is contact-sales only. */
+  purchasable: boolean;
   /**
    * Screenings allowed per billing period, null = unlimited. The `features`
    * copy above is marketing text; this is the number the server enforces, so
@@ -62,7 +62,7 @@ export const PLANS: Plan[] = [
     extraSeatPrice: null,
     maxSeats: 1,
     extraSeatCents: null,
-    polarProductId: "c59a5ea7-e21e-4894-98a3-3ac1c1fa433e",
+    purchasable: true,
     screeningQuota: 150,
   },
   {
@@ -82,7 +82,7 @@ export const PLANS: Plan[] = [
     extraSeatPrice: "$29 / month",
     maxSeats: 25,
     extraSeatCents: 2900,
-    polarProductId: "964f4eb8-91b2-4289-ab4a-35d8c26d9420",
+    purchasable: true,
     screeningQuota: 750,
   },
   {
@@ -102,34 +102,7 @@ export const PLANS: Plan[] = [
     extraSeatPrice: "Included",
     maxSeats: null,
     extraSeatCents: null,
-    polarProductId: "a6970a25-435f-4278-9657-bc89fd7a5598",
+    purchasable: true,
     screeningQuota: null,
   },
 ];
-
-/** Polar product for extra seats beyond a plan's bundle. */
-export const EXTRA_SEAT_PRODUCT_ID = "7afd79f7-1f49-47bb-8812-b985800c0354";
-
-/** Env keys holding sandbox product ids, mapped to the plan they represent. */
-const SANDBOX_PRODUCT_ENV: Record<string, Plan["id"]> = {
-  POLAR_SANDBOX_PRODUCT_ANGEL: "angel",
-  POLAR_SANDBOX_PRODUCT_SYNDICATE: "syndicate",
-  POLAR_SANDBOX_PRODUCT_INSTITUTION: "institution",
-};
-
-/**
- * Maps a Polar product id back to an app plan id. Sandbox products have
- * different ids than live ones, so env overrides are consulted too — without
- * this a sandbox purchase never flips the plan on the app row.
- */
-export function planIdFromPolarProduct(productId: string | null | undefined) {
-  if (!productId) return undefined;
-  const direct = PLANS.find((p) => p.polarProductId === productId)?.id;
-  if (direct) return direct;
-  if (typeof process !== "undefined" && process.env) {
-    for (const [key, plan] of Object.entries(SANDBOX_PRODUCT_ENV)) {
-      if (process.env[key] === productId) return plan;
-    }
-  }
-  return undefined;
-}

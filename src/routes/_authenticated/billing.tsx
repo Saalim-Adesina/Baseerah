@@ -76,7 +76,10 @@ function Billing() {
     setBusy(planId);
     try {
       const { url } = await checkout({
-        data: { planId: planId as "angel" | "syndicate" | "institution", origin: window.location.origin },
+        data: {
+          planId: planId as "angel" | "syndicate" | "institution",
+          origin: window.location.origin,
+        },
       });
       window.location.href = url;
     } catch (error) {
@@ -190,8 +193,13 @@ function Billing() {
             >
               Billing webhook audit
             </Link>
+            <Link
+              to="/environment"
+              className="rounded-md border border-input px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Environment
+            </Link>
           </div>
-
         </div>
       ) : null}
 

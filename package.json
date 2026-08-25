@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "env:check": "node --disable-warning=ExperimentalWarning --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-env.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "webhooks:list": "node --disable-warning=ExperimentalWarning --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/polar-webhooks.ts list",

@@ -17,12 +17,12 @@ step 7 first.
    last had:
 
    ```sh
-   npm run webhooks:sync -- <PROD_URL>/api/public/polar-webhook
-   npm run webhooks:list          # confirm the URL that came back
+   npm run webhooks:sync -- --env=production <PROD_URL>/api/public/polar-webhook
+   npm run webhooks:list -- --env=production   # confirm the URL that came back
    ```
 
-   Re-check `POLAR_WEBHOOK_SECRET` afterwards — a synced endpoint keeps its
-   secret, a recreated one does not.
+   Re-check `POLAR_PRODUCTION_WEBHOOK_SECRET` afterwards — a synced endpoint
+   keeps its secret, a recreated one does not.
 
 2. **`PUBLIC_APP_URL` is unset.** It pins the OAuth redirect URI Google must
    match byte for byte, so Gmail connect cannot work in production until it
@@ -174,7 +174,8 @@ build`); Nitro's `vercel` preset writes `.vercel/output`, which Vercel picks
    `PUBLIC_APP_URL` must equal the deployed origin — **still unset, Outstanding
    item 2.**
 3. Point Polar's webhook at `https://<domain>/api/public/polar-webhook`
-   (`npm run webhooks:sync -- <url>`), and re-check `POLAR_WEBHOOK_SECRET`.
+   (`npm run webhooks:sync -- --env=production <url>`), and re-check
+   `POLAR_PRODUCTION_WEBHOOK_SECRET`.
    **Still aimed at Lovable, Outstanding item 1.**
 4. Move the domain's DNS off `*.lovable.app`.
 

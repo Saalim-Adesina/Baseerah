@@ -41,6 +41,8 @@ export const checkEmailForSignup = createServerFn({ method: "POST" })
       };
     }
 
+    const { polarCatalog } = await import("@/server/polarCatalog");
+
     let subscription = null;
     try {
       const { findSubscriptionByEmail } = await import("@/lib/polar.server");
@@ -60,17 +62,20 @@ export const checkEmailForSignup = createServerFn({ method: "POST" })
       };
     }
 
-    const plan = expectedPlan({
-      id: subscription.id,
-      status: subscription.status,
-      productId: subscription.product_id ?? subscription.product?.id ?? null,
-      productName: subscription.product?.name ?? null,
-      customerId: subscription.customer?.id ?? null,
-      externalCustomerId: subscription.customer?.external_id ?? null,
-      email,
-      currentPeriodEnd: subscription.current_period_end ?? null,
-      seats: null,
-    });
+    const plan = expectedPlan(
+      {
+        id: subscription.id,
+        status: subscription.status,
+        productId: subscription.product_id ?? subscription.product?.id ?? null,
+        productName: subscription.product?.name ?? null,
+        customerId: subscription.customer?.id ?? null,
+        externalCustomerId: subscription.customer?.external_id ?? null,
+        email,
+        currentPeriodEnd: subscription.current_period_end ?? null,
+        seats: null,
+      },
+      polarCatalog(),
+    );
 
     return {
       action: "reset",
@@ -94,21 +99,25 @@ export const syncMySubscriptionFromPolar = createServerFn({ method: "POST" })
     if (!email) return { linked: false, reason: "no-email" as const };
 
     const { findSubscriptionByEmail } = await import("@/lib/polar.server");
+    const { polarCatalog } = await import("@/server/polarCatalog");
     const sub = await findSubscriptionByEmail(email);
     if (!sub) return { linked: false, reason: "no-polar-subscription" as const };
 
     const productId = sub.product_id ?? sub.product?.id ?? null;
-    const plan = expectedPlan({
-      id: sub.id,
-      status: sub.status,
-      productId,
-      productName: sub.product?.name ?? null,
-      customerId: sub.customer?.id ?? null,
-      externalCustomerId: sub.customer?.external_id ?? null,
-      email,
-      currentPeriodEnd: sub.current_period_end ?? null,
-      seats: null,
-    });
+    const plan = expectedPlan(
+      {
+        id: sub.id,
+        status: sub.status,
+        productId,
+        productName: sub.product?.name ?? null,
+        customerId: sub.customer?.id ?? null,
+        externalCustomerId: sub.customer?.external_id ?? null,
+        email,
+        currentPeriodEnd: sub.current_period_end ?? null,
+        seats: null,
+      },
+      polarCatalog(),
+    );
 
     const patch: Record<string, string | number | null> = {
       polar_subscription_id: sub.id,

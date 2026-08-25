@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { PLANS, planById, planIdFromPolarProduct, seatsSupported } from "@/lib/plans";
+import { PLANS, planById, seatsSupported } from "@/lib/plans";
+import { planIdForProduct } from "@/lib/polar-catalog";
+import { SANDBOX_CATALOG } from "@/lib/test-catalog";
 import {
   atSeatLimit,
   canAddSeat,
@@ -15,13 +17,13 @@ const syndicate = planById("syndicate")!;
 const institution = planById("institution")!;
 
 describe("plan catalogue", () => {
-  it("maps every purchasable plan to a Polar product", () => {
-    for (const plan of PLANS) expect(plan.polarProductId).toBeTruthy();
+  it("marks every plan in the catalogue as purchasable online", () => {
+    for (const plan of PLANS) expect(plan.purchasable).toBe(true);
   });
 
-  it("resolves a Polar product id back to a plan", () => {
-    expect(planIdFromPolarProduct(syndicate.polarProductId)).toBe("syndicate");
-    expect(planIdFromPolarProduct("not-a-product")).toBeUndefined();
+  it("resolves a Polar product id back to a plan within one environment", () => {
+    expect(planIdForProduct(SANDBOX_CATALOG, SANDBOX_CATALOG.products.syndicate)).toBe("syndicate");
+    expect(planIdForProduct(SANDBOX_CATALOG, "not-a-product")).toBeUndefined();
   });
 
   it("only offers seats on multi-seat plans", () => {

@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Loader2, RefreshCw, ScrollText, Search, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  ScrollText,
+  Search,
+  Settings2,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -130,6 +138,11 @@ function AdminPage() {
           <Button asChild variant="outline">
             <Link to="/webhook-audit">
               <ScrollText className="h-4 w-4" /> Billing log
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/environment">
+              <Settings2 className="h-4 w-4" /> Environment
             </Link>
           </Button>
           <Button

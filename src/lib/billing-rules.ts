@@ -6,7 +6,7 @@
  * billing auto-sync, reconciliation and the developer dashboard. Keeping the
  * rules in one place is what stops these surfaces from drifting apart.
  */
-import { EXTRA_SEAT_PRODUCT_ID, planById, planIdFromPolarProduct, type Plan } from "@/lib/plans";
+import { planById, type Plan } from "@/lib/plans";
 
 export const APP_PLANS = ["angel_trial", "angel", "syndicate", "institution"] as const;
 export type AppPlanId = (typeof APP_PLANS)[number];
@@ -34,11 +34,6 @@ export function normalizeEmail(email: string | null | undefined) {
   return (email ?? "").trim().toLowerCase() || null;
 }
 
-/** Polar product id -> app plan id (handles live and sandbox product ids). */
-export function planForProduct(productId: string | null | undefined): AppPlanId | null {
-  return (planIdFromPolarProduct(productId) as AppPlanId | undefined) ?? null;
-}
-
 /** Polar subscription status -> the status stored on the app row. */
 export function appStatusFor(polarStatus: string | null | undefined): AppStatus {
   if (!polarStatus) return "active";
@@ -58,23 +53,6 @@ export function seatsForPlan(planId: string | null | undefined, extraSeats = 0) 
   const bundled = plan?.seatsIncluded ?? 1;
   const total = bundled + Math.max(extraSeats, 0);
   return plan?.maxSeats === null ? total : Math.min(total, plan?.maxSeats ?? total);
-}
-
-/** Env keys holding the sandbox extra-seat product id. */
-const SANDBOX_SEAT_ENV = ["POLAR_SANDBOX_PRODUCT_EXTRA_SEAT"];
-
-/**
- * True when a Polar product is the standalone "extra seat" product. These
- * subscriptions must only add seats — they must never overwrite the account's
- * plan or its main subscription link.
- */
-export function isExtraSeatProduct(productId: string | null | undefined) {
-  if (!productId) return false;
-  if (productId === EXTRA_SEAT_PRODUCT_ID) return true;
-  if (typeof process !== "undefined" && process.env) {
-    return SANDBOX_SEAT_ENV.some((key) => process.env[key] === productId);
-  }
-  return false;
 }
 
 /** True when metadata marks the checkout as an extra-seat purchase. */

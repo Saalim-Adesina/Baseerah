@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { EXTRA_SEAT_PRODUCT_ID, PLANS, planById } from "@/lib/plans";
+import { PLANS, planById } from "@/lib/plans";
+import { requireProductId } from "@/lib/polar-catalog";
 
 const checkoutInput = z.object({
   planId: z.enum(["angel", "syndicate", "institution"]),
@@ -21,9 +22,11 @@ export const startCheckout = createServerFn({ method: "POST" })
     const plan = PLANS.find((p) => p.id === data.planId);
     if (!plan) throw new Error("Unknown plan.");
 
-    const { createCheckoutSession, resolveProductId } = await import("@/lib/polar.server");
-    const productId = resolveProductId(plan.id, plan.polarProductId);
-    if (!productId) throw new Error("This plan is not purchasable online.");
+    if (!plan.purchasable) throw new Error("This plan is not purchasable online.");
+
+    const { createCheckoutSession } = await import("@/lib/polar.server");
+    const { polarCatalog } = await import("@/server/polarCatalog");
+    const productId = requireProductId(polarCatalog(), plan.id);
 
     const checkout = await createCheckoutSession({
       productId,
@@ -71,9 +74,9 @@ export const startExtraSeatCheckout = createServerFn({ method: "POST" })
       );
     }
 
-    const { createCheckoutSession, resolveProductId } = await import("@/lib/polar.server");
-    const productId = resolveProductId("extra_seat", EXTRA_SEAT_PRODUCT_ID);
-    if (!productId) throw new Error("Extra seats are not purchasable right now.");
+    const { createCheckoutSession } = await import("@/lib/polar.server");
+    const { polarCatalog } = await import("@/server/polarCatalog");
+    const productId = requireProductId(polarCatalog(), "extra_seat");
 
     const checkout = await createCheckoutSession({
       productId,
