@@ -42,6 +42,7 @@ dist-ssr
 .env
 .env.*.local
 !.env.example
+.env.local.bak
 
 # Supabase CLI scratch (version cache, linked-project state)
 supabase/.temp/
