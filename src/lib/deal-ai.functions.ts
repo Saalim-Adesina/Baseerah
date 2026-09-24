@@ -7,9 +7,17 @@ import {
   createAzureFoundryProvider,
   supportsDocumentIntelligence,
 } from "./azure.server";
-import { analysisPrompt, dealDossier, thesisBlock, HOUSE_RULES } from "./prompts.server";
+import {
+  analysisPrompt,
+  dealDossier,
+  figureTranscriptionPrompt,
+  intakeExtractionPrompt,
+  thesisBlock,
+  HOUSE_RULES,
+} from "./prompts.server";
+import { INTAKE_FIELDS, type IntakeFieldKey } from "./deal-intake-fields";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Deal, Thesis } from "./types";
+import { ROUNDS, type Deal, type Round, type Thesis } from "./types";
 
 /**
  * The prompt builders in `prompts.server.ts` read these fields unconditionally,
@@ -228,6 +236,97 @@ It must: thank them concretely, give the two or three real reasons for passing (
     }
   });
 
+/**
+ * Answers to the intake questionnaire. Every field is nullable because null is
+ * a real answer — "the deck did not say" — which the form leaves blank and the
+ * screening then reports as a diligence gap. See `intakeExtractionPrompt`.
+ */
+const dealFieldsSchema = z.object({
+  ...(Object.fromEntries(
+    INTAKE_FIELDS.filter((field) => field.key !== "round").map((field) => [
+      field.key,
+      z.string().nullable(),
+    ]),
+  ) as Record<Exclude<IntakeFieldKey, "round">, z.ZodNullable<z.ZodString>>),
+  round: z.enum(ROUNDS as [Round, ...Round[]]).nullable(),
+  // No `.default()` anywhere in this schema: Azure structured outputs reject a
+  // response_format whose `required` array omits any key in `properties`, and a
+  // Zod default is what makes a key optional. The prompt asks for an empty list
+  // when the deck names nobody, and the caller still guards against a null.
+  founders: z.array(
+    z.object({
+      name: z.string().nullable(),
+      role: z.string().nullable(),
+      linkedin: z.string().nullable(),
+      background: z.string().nullable(),
+    }),
+  ),
+});
+
+export const extractDealFields = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ deckText: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    const azure = createAzureFoundryProvider();
+
+    // Temperature 0: this is a reading task, and the only creative failure
+    // available to it is inventing an answer the deck never gave.
+    const { output } = await generateText({
+      model: azure(azureDeployment()),
+      temperature: 0,
+      output: Output.object({ schema: dealFieldsSchema }),
+      prompt: intakeExtractionPrompt(data.deckText.slice(0, 60000)),
+    });
+
+    return output;
+  });
+
+/**
+ * Sends the deck's figure crops to the vision model in one call and returns
+ * their transcription, ready to append to the OCR text. Best-effort by design:
+ * an upload whose pictures cannot be read is still a usable upload, so this
+ * degrades to an empty string rather than failing the extraction.
+ */
+async function describeVisuals(
+  visuals: { base64: string; mediaType: string; label: string }[],
+): Promise<string> {
+  if (!visuals.length) return "";
+
+  try {
+    const azure = createAzureFoundryProvider();
+    const { text } = await generateText({
+      model: azure(azureDeployment()),
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: figureTranscriptionPrompt(visuals.length) },
+            // Each image is labelled immediately before it, so the model's
+            // "FIGURE n" headings line up with the crops they describe.
+            ...visuals.flatMap((visual, index) => [
+              { type: "text" as const, text: `FIGURE ${index + 1} (${visual.label}):` },
+              {
+                type: "file" as const,
+                data: visual.base64,
+                mediaType: visual.mediaType,
+              },
+            ]),
+          ],
+        },
+      ],
+    });
+
+    const body = text.trim();
+    return body
+      ? `=== VISUAL CONTENT (transcribed from the deck's charts and images) ===\n${body}`
+      : "";
+  } catch (error) {
+    console.error("Figure transcription failed", error);
+    return "";
+  }
+}
+
 export const extractDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
@@ -251,6 +350,32 @@ export const extractDocument = createServerFn({ method: "POST" })
       : data.dataUrl;
     if (!base64Source.trim()) throw new Error("The uploaded file appears to be empty.");
 
-    const markdown = await analyzeDocumentLayout(base64Source);
-    return { text: markdown };
+    const { markdown, figures } = await analyzeDocumentLayout(base64Source);
+
+    // An image upload is one whole figure in its own right: OCR gives back its
+    // loose text, and the picture itself is what carries the meaning.
+    const isImage =
+      data.mimeType.startsWith("image/") ||
+      /\.(jpe?g|png|bmp|tiff?|heif|webp)$/i.test(data.filename);
+    const visuals: { base64: string; mediaType: string; label: string }[] = isImage
+      ? [
+          {
+            base64: base64Source,
+            mediaType: data.mimeType.startsWith("image/") ? data.mimeType : "image/png",
+            label: data.filename,
+          },
+        ]
+      : figures.map((figure) => ({
+          base64: figure.base64,
+          mediaType: "image/png",
+          label: figure.caption
+            ? `page ${figure.page ?? "?"} — ${figure.caption}`
+            : `page ${figure.page ?? "?"}`,
+        }));
+
+    const described = await describeVisuals(visuals);
+
+    const text = [markdown.trim(), described].filter(Boolean).join("\n\n");
+    if (!text.trim()) throw new Error("Nothing readable could be extracted from this file.");
+    return { text, figureCount: visuals.length };
   });

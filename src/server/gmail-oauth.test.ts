@@ -6,7 +6,7 @@ const TEST_SECRET = Buffer.alloc(32, 7).toString("base64");
 vi.mock("@/lib/azure.server", () => ({
   analyzeDocumentLayout: vi.fn(async (base64Source: string) => {
     if (base64Source.includes("BROKEN")) throw new Error("Document Intelligence failed");
-    return "# Acme Robotics\n\nSeed round, $2M ARR.";
+    return { markdown: "# Acme Robotics\n\nSeed round, $2M ARR.", figures: [] };
   }),
   supportsDocumentIntelligence: (mime: string, filename: string) =>
     mime === "application/pdf" || /\.(pdf|pptx|docx)$/i.test(filename),

@@ -128,7 +128,10 @@ export async function scanGmailForDecks(
         `/gmail/v1/users/me/messages/${message.id}/attachments/${attachment.body.attachmentId}`,
       );
       if (!file.data) throw new Error("Attachment came back empty.");
-      base.deckText = await analyzeDocumentLayout(base64UrlToBase64(file.data));
+      // OCR text only, deliberately: the scan walks a whole mailbox inside one
+      // function timeout, so it cannot afford a vision call per attachment. The
+      // figures are read when the deck is opened in the intake form.
+      base.deckText = (await analyzeDocumentLayout(base64UrlToBase64(file.data))).markdown;
     } catch (error) {
       base.extractionError = error instanceof Error ? error.message : "Could not read attachment";
     }

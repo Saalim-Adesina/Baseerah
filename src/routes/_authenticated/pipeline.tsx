@@ -184,9 +184,11 @@ function Pipeline() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl leading-tight">{deal.company}</h2>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    {deal.round}
-                  </Badge>
+                  {deal.round ? (
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {deal.round}
+                    </Badge>
+                  ) : null}
                   <span
                     className={`rounded px-2 py-0.5 text-[10px] uppercase tracking-wider ${STATUS_STYLE[deal.status]}`}
                   >

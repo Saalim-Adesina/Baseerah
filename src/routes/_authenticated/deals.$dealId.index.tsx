@@ -68,7 +68,10 @@ function DealAnalysis() {
       // route to fix it rather than a dead-end toast.
       if (/screening|trial has ended|no active subscription/i.test(message)) {
         toast.error(message, {
-          action: { label: "Billing", onClick: () => void navigate({ to: "/billing" }) },
+          action: {
+            label: "Billing",
+            onClick: () => void navigate({ to: "/settings", search: { tab: "billing" } }),
+          },
         });
       } else {
         toast.error(message);
@@ -130,7 +133,7 @@ function DealAnalysis() {
           <h2 className="text-2xl">Not screened yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             Run the screening to score every metric against your thesis, calibrated to the{" "}
-            {deal.round} stage, with the team weighted highest.
+            {deal.round || "unstated"} stage, with the team weighted highest.
           </p>
         </div>
       ) : (
@@ -150,7 +153,9 @@ function DealAnalysis() {
               <p className="mt-2 font-display text-2xl leading-snug">{analysis.headline}</p>
               <p className="mt-3 text-sm text-muted-foreground">{analysis.thesisFit}</p>
               <div className="mt-4 rounded-md border border-border bg-surface/60 p-4">
-                <p className="label-caps">Round-stage calibration ({deal.round})</p>
+                <p className="label-caps">
+                  Round-stage calibration ({deal.round || "stage not stated"})
+                </p>
                 <p className="mt-1.5 text-sm">{analysis.roundFitNote}</p>
               </div>
             </div>

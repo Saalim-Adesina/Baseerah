@@ -80,20 +80,70 @@ type AnalyzeResult = {
   analyzeResult?: {
     content?: string;
     paragraphs?: { content?: string }[];
+    figures?: {
+      id?: string;
+      caption?: { content?: string };
+      boundingRegions?: { pageNumber?: number }[];
+    }[];
   };
 };
 
+/** A chart, diagram or image crop lifted out of the document. */
+export type DocumentFigure = {
+  /** Document Intelligence figure id, conventionally `{page}.{index}`. */
+  id: string;
+  page: number | null;
+  /** The document's own caption for the figure, where it has one. */
+  caption: string;
+  /** PNG crop, base64 encoded, ready to hand to a vision model. */
+  base64: string;
+};
+
+/**
+ * Charts and diagrams carry much of a pitch deck's substance, and layout OCR
+ * reduces them to loose axis labels. Cropping every figure would be unbounded,
+ * so take the first N in reading order — a deck front-loads what matters.
+ */
+const MAX_FIGURES = 14;
+
+/**
+ * Fetches one cropped figure image. Figures exist only because the analyze call
+ * asked for `output=figures`, and only for rendered formats — PDF and images.
+ * Office formats and HTML are never rendered, so they yield no figures at all.
+ */
+async function fetchFigure(
+  endpoint: string,
+  key: string,
+  resultId: string,
+  figureId: string,
+): Promise<string | null> {
+  const response = await fetch(
+    `${endpoint}/documentintelligence/documentModels/prebuilt-layout/analyzeResults/` +
+      `${encodeURIComponent(resultId)}/figures/${encodeURIComponent(figureId)}` +
+      `?api-version=${DOC_INTELLIGENCE_API_VERSION}`,
+    { headers: { "Ocp-Apim-Subscription-Key": key } },
+  );
+  // A missing crop degrades the read; it must never fail the upload.
+  if (!response.ok) return null;
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (!bytes.byteLength) return null;
+  return Buffer.from(bytes).toString("base64");
+}
+
 /**
  * Runs Azure AI Document Intelligence `prebuilt-layout` over a document and
- * returns markdown preserving headings, tables and reading order.
+ * returns markdown preserving headings, tables and reading order, plus cropped
+ * images of every figure it found so a vision model can read what OCR cannot.
  */
-export async function analyzeDocumentLayout(base64Source: string) {
+export async function analyzeDocumentLayout(
+  base64Source: string,
+): Promise<{ markdown: string; figures: DocumentFigure[] }> {
   const endpoint = trimSlash(requireEnv("AZURE_DOC_INTELLIGENCE_ENDPOINT"));
   const key = requireEnv("AZURE_DOC_INTELLIGENCE_KEY");
 
   const submit = await fetch(
     `${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze` +
-      `?api-version=${DOC_INTELLIGENCE_API_VERSION}&outputContentFormat=markdown`,
+      `?api-version=${DOC_INTELLIGENCE_API_VERSION}&outputContentFormat=markdown&output=figures`,
     {
       method: "POST",
       headers: {
@@ -114,6 +164,7 @@ export async function analyzeDocumentLayout(base64Source: string) {
   if (!operationLocation) {
     throw new Error("Document Intelligence did not return an operation location.");
   }
+  const resultId = /\/analyzeResults\/([^/?]+)/.exec(operationLocation)?.[1] ?? "";
 
   const deadline = Date.now() + 4 * 60 * 1000;
   let delay = 1000;
@@ -138,10 +189,28 @@ export async function analyzeDocumentLayout(base64Source: string) {
         (result.analyzeResult?.paragraphs ?? [])
           .map((paragraph) => paragraph.content ?? "")
           .join("\n\n");
-      if (!content.trim()) {
+
+      const detected = (result.analyzeResult?.figures ?? []).filter((figure) => figure.id);
+      const crops = await Promise.all(
+        detected.slice(0, MAX_FIGURES).map(async (figure) => {
+          const base64 = await fetchFigure(endpoint, key, resultId, figure.id as string);
+          if (!base64) return null;
+          return {
+            id: figure.id as string,
+            page: figure.boundingRegions?.[0]?.pageNumber ?? null,
+            caption: figure.caption?.content?.trim() ?? "",
+            base64,
+          } satisfies DocumentFigure;
+        }),
+      );
+      const figures = crops.filter((figure): figure is DocumentFigure => figure !== null);
+
+      // A deck that is entirely images has no OCR text but plenty of figures,
+      // and is still readable — only a file with neither is a dead end.
+      if (!content.trim() && !figures.length) {
         throw new Error("Document Intelligence returned no readable content for this file.");
       }
-      return content;
+      return { markdown: content, figures };
     }
     if (result.status === "failed") {
       throw new Error(

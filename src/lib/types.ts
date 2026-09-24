@@ -25,7 +25,7 @@ export type Deal = {
   oneLiner: string;
   sector: string;
   geography: string;
-  round: Round;
+  round: Round | "";
   raising: string;
   valuation: string;
   traction: string;

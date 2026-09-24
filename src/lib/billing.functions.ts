@@ -32,7 +32,7 @@ export const startCheckout = createServerFn({ method: "POST" })
       productId,
       externalCustomerId: context.userId,
       customerEmail: (context.claims as { email?: string } | null)?.email ?? null,
-      successUrl: `${data.origin}/billing?checkout_id={CHECKOUT_ID}`,
+      successUrl: `${data.origin}/settings?tab=billing&checkout_id={CHECKOUT_ID}`,
       metadata: {
         plan: plan.id,
         seats: String(plan.seatsIncluded),
@@ -82,7 +82,7 @@ export const startExtraSeatCheckout = createServerFn({ method: "POST" })
       productId,
       externalCustomerId: context.userId,
       customerEmail: (context.claims as { email?: string } | null)?.email ?? null,
-      successUrl: `${data.origin}/billing?checkout_id={CHECKOUT_ID}`,
+      successUrl: `${data.origin}/settings?tab=billing&checkout_id={CHECKOUT_ID}`,
       seats: data.seats,
       // `quantity` is duplicated into metadata because the webhook's seat count
       // falls back to it when the subscription payload omits a seat field.

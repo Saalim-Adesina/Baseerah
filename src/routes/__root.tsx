@@ -12,7 +12,14 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsDeveloper, useSession } from "@/lib/account";
-import { Menu, X } from "lucide-react";
+import { Menu, Settings, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import appCss from "../styles.css?url";
 import navbarLogo from "@/assets/navbar_logo.png";
@@ -179,6 +186,8 @@ function TopNav() {
   const mobileCtaClass =
     "block rounded-md bg-primary px-3 py-2.5 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90";
 
+  // Pipeline and New deal are the working surface and stay in the bar; the
+  // account-level destinations live behind the gear so the bar stays short.
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
       {user ? (
@@ -197,51 +206,62 @@ function TopNav() {
           >
             New deal
           </Link>
-          <Link
-            to="/thesis"
-            className={mobile ? mobileLinkClass : linkClass}
-            onClick={() => mobile && setMobileOpen(false)}
-          >
-            Thesis
-          </Link>
-          <Link
-            to="/billing"
-            className={mobile ? mobileLinkClass : linkClass}
-            onClick={() => mobile && setMobileOpen(false)}
-          >
-            Plan
-          </Link>
-          <Link
-            to="/settings"
-            className={mobile ? mobileLinkClass : linkClass}
-            onClick={() => mobile && setMobileOpen(false)}
-          >
-            Settings
-          </Link>
-          {isDeveloper ? (
-            <Link
-              to="/admin"
-              className={mobile ? mobileLinkClass : linkClass}
-              onClick={() => mobile && setMobileOpen(false)}
-            >
-              Admin
-            </Link>
-          ) : null}
         </>
       ) : null}
     </>
   );
 
+  const settingsLinks: Array<{ to: string; label: string }> = [
+    { to: "/thesis", label: "Thesis" },
+    { to: "/settings", label: "Settings" },
+    ...(isDeveloper ? [{ to: "/admin", label: "Admin" }] : []),
+  ];
+
+  // Mobile keeps one panel: the same destinations, below a rule.
+  const SettingsLinks = () => (
+    <>
+      {settingsLinks.map(({ to, label }) => (
+        <Link key={to} to={to} className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+          {label}
+        </Link>
+      ))}
+    </>
+  );
+
+  const SettingsMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Account menu"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-secondary data-[state=open]:text-foreground"
+      >
+        <Settings className="h-5 w-5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {settingsLinks.map(({ to, label }) => (
+          <DropdownMenuItem key={to} asChild>
+            <Link to={to} className="w-full cursor-pointer">
+              {label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const AuthActions = ({ mobile = false }: { mobile?: boolean }) => (
     <>
       {loading ? null : user ? (
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className={mobile ? mobileLinkClass : linkClass}
-        >
-          Sign out
-        </button>
+        mobile ? (
+          <button type="button" onClick={handleSignOut} className={mobileLinkClass}>
+            Sign out
+          </button>
+        ) : (
+          <SettingsMenu />
+        )
       ) : (
         <>
           <Link
@@ -326,6 +346,12 @@ function TopNav() {
               </div>
               <nav className="mt-6 flex flex-col gap-1">
                 <NavLinks mobile />
+                {user ? (
+                  <>
+                    <div className="my-3 border-t border-border" />
+                    <SettingsLinks />
+                  </>
+                ) : null}
                 <div className="my-3 border-t border-border" />
                 <AuthActions mobile />
               </nav>

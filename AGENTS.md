@@ -36,3 +36,17 @@ connector gateway.
   `src/server/**` or `*.server.ts` and import them lazily from server functions.
 
 See `MIGRATION.md` for the remaining manual cutover steps.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are local markdown under `.scratch/<feature>/`, not GitHub Issues, despite the GitHub remote. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, unrenamed, written as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root. See `docs/agents/domain.md`.

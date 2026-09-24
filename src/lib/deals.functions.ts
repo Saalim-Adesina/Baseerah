@@ -55,7 +55,7 @@ function toDeal(row: DealRow): Deal {
     oneLiner: row.one_liner,
     sector: row.sector,
     geography: row.geography,
-    round: row.round as Round,
+    round: row.round as Round | "",
     raising: row.raising,
     valuation: row.valuation,
     traction: row.traction,

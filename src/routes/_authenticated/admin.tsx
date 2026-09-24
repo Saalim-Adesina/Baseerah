@@ -133,7 +133,9 @@ function AdminPage() {
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
           <Button asChild variant="outline">
-            <Link to="/billing">My plan</Link>
+            <Link to="/settings" search={{ tab: "billing" }}>
+              My plan
+            </Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/webhook-audit">
