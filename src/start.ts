@@ -18,14 +18,19 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
-// Start installs this automatically when src/start.ts is absent; defining the
-// file opts out, so re-add it explicitly to keep server functions protected
-// from cross-site requests.
-const csrfMiddleware = createCsrfMiddleware({
-  filter: (ctx) => ctx.handlerType === "serverFn",
-});
-
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  requestMiddleware: [
+    errorMiddleware,
+    // Start installs CSRF protection automatically when src/start.ts is absent;
+    // defining this file opts out, so it is re-added explicitly to keep server
+    // functions protected from cross-site requests.
+    //
+    // Constructed inside the factory, not at module scope. `createCsrfMiddleware`
+    // is a `const` export, and in the production bundle a top-level call here
+    // can run before its defining module has initialised — which fails with
+    // "createCsrfMiddleware is not a function" on every request. Dev does not
+    // bundle, so it only ever showed up in a built deployment.
+    createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === "serverFn" }),
+  ],
 }));

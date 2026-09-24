@@ -76,6 +76,33 @@ export default defineConfig(async ({ command, mode }) => {
     plugins.push(
       nitro({
         preset: process.env["NITRO_PRESET"] ?? "vercel",
+        // Baseline security response headers. A CASA Tier 2 scan checks for
+        // these directly, and their absence is a finding on its own.
+        //
+        // Deliberately no Content-Security-Policy yet: this app inlines styles
+        // and hydration state, so a CSP needs to be built against a real
+        // report-only run before it is enforced. Shipping a guessed one either
+        // breaks the app or is so permissive it proves nothing.
+        routeRules: {
+          "/**": {
+            headers: {
+              // 2 years, preload-eligible. Only meaningful once the domain is
+              // served over HTTPS everywhere, which it is.
+              "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+              // Stop MIME sniffing turning an upload into executable content.
+              "X-Content-Type-Options": "nosniff",
+              // No framing at all — the app has no legitimate embedder, and
+              // this is the clickjacking defence for the OAuth-connected UI.
+              "X-Frame-Options": "DENY",
+              "Referrer-Policy": "strict-origin-when-cross-origin",
+              // Features the app never uses; denying them shrinks the surface
+              // an injected script could reach for.
+              "Permissions-Policy":
+                "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
+              "Cross-Origin-Opener-Policy": "same-origin",
+            },
+          },
+        },
         // Deck extraction polls Azure Document Intelligence for up to 4 minutes
         // and a Gmail scan runs several of those back to back. Vercel's default
         // function timeout kills both, so raise it. The ceiling depends on the

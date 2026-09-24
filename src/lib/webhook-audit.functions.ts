@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type WebhookAuditRow = {
   id: string;
@@ -22,7 +24,11 @@ export type WebhookAuditRow = {
   applied_row: Record<string, string | number | boolean | null> | null;
 };
 
-async function assertDeveloper(context: { supabase: any; userId: string }) {
+/**
+ * Developer gate. Runs on the caller's own RLS-bound client, so the check is
+ * against their identity and cannot be spoofed by the request body.
+ */
+async function assertDeveloper(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "developer",
@@ -30,10 +36,22 @@ async function assertDeveloper(context: { supabase: any; userId: string }) {
   if (error || !data) throw new Error("Forbidden — developer access required.");
 }
 
+/**
+ * PostgREST reads `,` `(` `)` and `.` as structure inside an `or=` filter, so a raw search
+ * term interpolated into the filter string can change the query. Double-quoting the value
+ * makes PostgREST treat it as a literal; inside those quotes only `\` and `"` are special,
+ * and both are escaped with a backslash. `%` stays unescaped so the match is still a
+ * substring (ilike) search, exactly as before.
+ */
+function pgrestQuotedLike(value: string): string {
+  const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"%${escaped}%"`;
+}
+
 /** Recent Polar webhook deliveries with their mapping decisions and results. */
 export const listWebhookEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         outcome: z.string().max(30).optional(),
@@ -43,7 +61,7 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
       .parse(data ?? {}),
   )
   .handler(async ({ data, context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let query = supabaseAdmin
@@ -56,9 +74,9 @@ export const listWebhookEvents = createServerFn({ method: "POST" })
 
     if (data.outcome && data.outcome !== "all") query = query.eq("outcome", data.outcome);
     if (data.search) {
-      const s = data.search.trim();
+      const term = pgrestQuotedLike(data.search.trim());
       query = query.or(
-        `matched_email.ilike.%${s}%,polar_subscription_id.ilike.%${s}%,polar_customer_id.ilike.%${s}%,event_type.ilike.%${s}%`,
+        `matched_email.ilike.${term},polar_subscription_id.ilike.${term},polar_customer_id.ilike.${term},event_type.ilike.${term}`,
       );
     }
 

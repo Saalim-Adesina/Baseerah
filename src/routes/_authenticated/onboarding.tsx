@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Copy, MailCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession, INVESTOR_TYPES, type InvestorType } from "@/lib/account";
-import { inboxAddress } from "@/lib/account";
+import { useGmailConnect } from "@/hooks/use-gmail";
 
 import {
   CHECK_SIZE_OPTIONS,
@@ -115,7 +115,7 @@ const STEPS: { id: StepId; title: string; blurb: string }[] = [
   {
     id: "inbox",
     title: "Connect your deal inbox",
-    blurb: "Forward inbound decks here and they land in your pipeline, screened.",
+    blurb: "Read-only access. Baseerah finds decks in your mailbox and screens them.",
   },
   {
     id: "confirm",
@@ -243,7 +243,7 @@ function OnboardingPage() {
     setIndex((value) => value + 1);
   }
 
-  const forwarding = useMemo(() => (user ? inboxAddress(user.id) : ""), [user]);
+  const { connect: connectGmail, connecting: connectingGmail } = useGmailConnect();
 
   if (!ready) return null;
 
@@ -435,46 +435,28 @@ function OnboardingPage() {
           {step.id === "inbox" ? (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-surface p-5">
-                <p className="label-caps">Your private forwarding address</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <code className="flex-1 truncate font-mono text-sm">{forwarding}</code>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(forwarding);
-                      toast.success("Address copied");
-                    }}
-                  >
-                    <Copy className="mr-1 h-3.5 w-3.5" /> Copy
-                  </Button>
-                </div>
+                <p className="label-caps">Connect your mailbox</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Baseerah reads recent messages that carry a deck attachment and turns them into
+                  scored deals. Read-only access — nothing is sent, deleted or modified.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-4"
+                  size="sm"
+                  onClick={() => {
+                    set("connect_inbox", true);
+                    void connectGmail();
+                  }}
+                  disabled={connectingGmail}
+                >
+                  {connectingGmail ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                  Connect Gmail
+                </Button>
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Add this as a forwarding rule in Gmail or Outlook for anything that looks like a
-                  deck. Everything forwarded here is screened against your thesis automatically.
+                  You can skip this and connect later from Settings.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => set("connect_inbox", !answers.connect_inbox)}
-                className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg border px-4 py-3 text-left text-sm transition-colors ${
-                  answers.connect_inbox
-                    ? "border-accent bg-accent/10"
-                    : "border-border hover:bg-secondary"
-                }`}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded border ${
-                    answers.connect_inbox ? "border-accent bg-accent" : "border-border"
-                  }`}
-                >
-                  {answers.connect_inbox ? (
-                    <Check className="h-3.5 w-3.5 text-accent-foreground" />
-                  ) : null}
-                </span>
-                I've set up forwarding to this address
-              </button>
             </div>
           ) : null}
 
@@ -518,7 +500,6 @@ function OnboardingPage() {
             </div>
           ) : null}
         </div>
-
 
         <div className="mt-12 flex items-center justify-between gap-3">
           <button

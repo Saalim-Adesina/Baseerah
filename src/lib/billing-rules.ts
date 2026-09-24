@@ -6,7 +6,7 @@
  * billing auto-sync, reconciliation and the developer dashboard. Keeping the
  * rules in one place is what stops these surfaces from drifting apart.
  */
-import { EXTRA_SEAT_PRODUCT_ID, planById, planIdFromPolarProduct, type Plan } from "@/lib/plans";
+import { planById, type Plan } from "@/lib/plans";
 
 export const APP_PLANS = ["angel_trial", "angel", "syndicate", "institution"] as const;
 export type AppPlanId = (typeof APP_PLANS)[number];
@@ -34,11 +34,6 @@ export function normalizeEmail(email: string | null | undefined) {
   return (email ?? "").trim().toLowerCase() || null;
 }
 
-/** Polar product id -> app plan id (handles live and sandbox product ids). */
-export function planForProduct(productId: string | null | undefined): AppPlanId | null {
-  return (planIdFromPolarProduct(productId) as AppPlanId | undefined) ?? null;
-}
-
 /** Polar subscription status -> the status stored on the app row. */
 export function appStatusFor(polarStatus: string | null | undefined): AppStatus {
   if (!polarStatus) return "active";
@@ -60,23 +55,6 @@ export function seatsForPlan(planId: string | null | undefined, extraSeats = 0) 
   return plan?.maxSeats === null ? total : Math.min(total, plan?.maxSeats ?? total);
 }
 
-/** Env keys holding the sandbox extra-seat product id. */
-const SANDBOX_SEAT_ENV = ["POLAR_SANDBOX_PRODUCT_EXTRA_SEAT"];
-
-/**
- * True when a Polar product is the standalone "extra seat" product. These
- * subscriptions must only add seats — they must never overwrite the account's
- * plan or its main subscription link.
- */
-export function isExtraSeatProduct(productId: string | null | undefined) {
-  if (!productId) return false;
-  if (productId === EXTRA_SEAT_PRODUCT_ID) return true;
-  if (typeof process !== "undefined" && process.env) {
-    return SANDBOX_SEAT_ENV.some((key) => process.env[key] === productId);
-  }
-  return false;
-}
-
 /** True when metadata marks the checkout as an extra-seat purchase. */
 export function isExtraSeatMetadata(metadata: Record<string, string> | null | undefined) {
   return metadata?.["kind"] === "extra_seat";
@@ -91,7 +69,11 @@ export function seatCeiling(plan: Plan | undefined, paidSeats: number | null | u
 }
 
 /** What an account looks like when it has no live Polar subscription. */
-export const TRIAL_BASELINE = { plan: "angel_trial" as const, status: "canceled" as const, seats: 1 };
+export const TRIAL_BASELINE = {
+  plan: "angel_trial" as const,
+  status: "canceled" as const,
+  seats: 1,
+};
 
 /**
  * Trials are an Angel-only offer. Syndicate and Institutional accounts pay in
@@ -124,3 +106,84 @@ export function hasAccess(plan: string | null | undefined, status: string | null
   return status === "trialing" && trialAllowedForPlan(plan);
 }
 
+/**
+ * Screenings allowed per billing period. `angel_trial` is not in `PLANS` (it is
+ * the pre-payment state, not a purchasable product), so its allowance lives
+ * here. null = unlimited.
+ */
+const TRIAL_SCREENING_QUOTA = 10;
+
+export function screeningQuotaForPlan(plan: string | null | undefined): number | null {
+  if ((plan ?? "angel_trial") === "angel_trial") return TRIAL_SCREENING_QUOTA;
+  const found = planById(plan ?? "");
+  // An unrecognised plan gets the trial allowance rather than unlimited — a
+  // typo in a plan id must never open the meter wide.
+  return found ? found.screeningQuota : TRIAL_SCREENING_QUOTA;
+}
+
+export type ScreeningVerdict =
+  | { allowed: true; quota: number | null; used: number; remaining: number | null }
+  | {
+      allowed: false;
+      reason: "no-access" | "trial-expired" | "quota-exceeded";
+      message: string;
+    };
+
+/**
+ * The one place that decides whether an account may screen another deal.
+ * `used` is the count already recorded for the current period; callers are
+ * responsible for having reset it when `periodEnd` has passed.
+ */
+export function screeningAllowed(input: {
+  plan: string | null | undefined;
+  status: string | null | undefined;
+  used: number;
+  periodEnd?: string | null;
+  now?: number;
+}): ScreeningVerdict {
+  // A trial that has run past its period end keeps `status: "trialing"` on the
+  // row until something reconciles it, and `hasAccess` still says yes. Left
+  // alone that would hand an expired trial an unlimited number of fresh
+  // allowances, one per rollover, so the meter checks the clock itself.
+  if (
+    input.status === "trialing" &&
+    trialAllowedForPlan(input.plan) &&
+    periodElapsed(input.periodEnd, input.now ?? Date.now())
+  ) {
+    return {
+      allowed: false,
+      reason: "trial-expired",
+      message: "Your trial has ended. Choose a plan to keep screening deals.",
+    };
+  }
+
+  if (!hasAccess(input.plan, input.status)) {
+    return {
+      allowed: false,
+      reason: "no-access",
+      message: "This account has no active subscription. Choose a plan to start screening.",
+    };
+  }
+
+  const quota = screeningQuotaForPlan(input.plan);
+  if (quota === null) return { allowed: true, quota: null, used: input.used, remaining: null };
+
+  if (input.used >= quota) {
+    return {
+      allowed: false,
+      reason: "quota-exceeded",
+      message: `You've used all ${quota} screenings on the ${planDisplayName(
+        input.plan,
+      )} plan this period. Upgrade to keep screening.`,
+    };
+  }
+
+  return { allowed: true, quota, used: input.used, remaining: quota - input.used };
+}
+
+/** True once the stored period end is in the past, so the meter should reset. */
+export function periodElapsed(periodEnd: string | null | undefined, now = Date.now()) {
+  if (!periodEnd) return false;
+  const end = Date.parse(periodEnd);
+  return Number.isFinite(end) && end <= now;
+}

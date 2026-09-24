@@ -1,3 +1,8 @@
+# NOTE: this file only affects `bun install`, and this repo installs with npm —
+# `package-lock.json` is the authoritative lockfile and `bun.lock` was removed
+# (it resolved every package from Lovable's private registry). The 24h guard
+# below is therefore inert today. It is kept so the policy survives if the repo
+# moves back to bun; npm has no built-in equivalent.
 [install]
 saveTextLockfile = true
 # 24h supply-chain guard: skip package versions published less than a day ago.

@@ -1,21 +1,17 @@
 // Server-only — never import in the browser.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { oauthStateSigningKey } from "@/server/appSecrets";
 
 /**
  * Signed OAuth `state`, so the redirect can be validated without a session
- * store: the value carries the user id and a nonce, HMAC'd with the same
- * server secret that encrypts stored refresh tokens.
+ * store: the value carries the user id and a nonce, HMAC'd with a signing key
+ * derived for this purpose alone — deliberately not the same key that encrypts
+ * stored refresh tokens.
  */
 const STATE_TTL_MS = 15 * 60 * 1000;
 
-function secret(): Buffer {
-  const raw = process.env["APP_USER_CONNECTION_KEY_SECRET"];
-  if (!raw) throw new Error("APP_USER_CONNECTION_KEY_SECRET is not set");
-  return Buffer.from(raw, "base64");
-}
-
 function sign(payload: string): string {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
+  return createHmac("sha256", oauthStateSigningKey()).update(payload).digest("base64url");
 }
 
 export function signOAuthState(userId: string): string {

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { planById } from "@/lib/plans";
 import {
   APP_PLANS,
@@ -32,7 +34,11 @@ export type OrgRow = {
   warnings: string[];
 };
 
-async function assertDeveloper(context: { supabase: any; userId: string }) {
+/**
+ * Developer gate. Runs on the caller's own RLS-bound client, so the check is
+ * against their identity and cannot be spoofed by the request body.
+ */
+async function assertDeveloper(context: { supabase: SupabaseClient<Database>; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "developer",
@@ -61,15 +67,15 @@ async function buildOrgs(): Promise<OrgRow[]> {
   if (members.error) throw members.error;
 
   const seatCounts = new Map<string, number>();
-  for (const m of (members.data ?? []) as any[]) {
+  for (const m of members.data ?? []) {
     seatCounts.set(m.owner_id, (seatCounts.get(m.owner_id) ?? 0) + 1);
   }
-  const subByUser = new Map((subs.data ?? []).map((s: any) => [s.user_id, s]));
+  const subByUser = new Map((subs.data ?? []).map((s) => [s.user_id, s]));
 
-  return ((profiles.data ?? []) as any[]).map((p) => {
-    const s = subByUser.get(p.id) ?? {};
-    const plan = s.plan ?? "angel_trial";
-    const paidSeats = s.seats ?? 1;
+  return (profiles.data ?? []).map((p) => {
+    const s = subByUser.get(p.id);
+    const plan = s?.plan ?? "angel_trial";
+    const paidSeats = s?.seats ?? 1;
     const used = seatCounts.get(p.id) ?? 0;
     const rawCeiling = seatCeiling(planById(plan), paidSeats);
     const ceiling = Number.isFinite(rawCeiling) ? (rawCeiling as number) : null;
@@ -78,13 +84,13 @@ async function buildOrgs(): Promise<OrgRow[]> {
     if (used === 0) warnings.push("No owner seat row — the owner's admin seat is missing.");
     if (ceiling !== null && used > ceiling)
       warnings.push(`${used} seats assigned but the plan allows ${ceiling}.`);
-    if (plan !== "angel_trial" && !s.polar_subscription_id)
+    if (plan !== "angel_trial" && !s?.polar_subscription_id)
       warnings.push("Paid plan with no Polar subscription linked.");
-    if (!s.polar_customer_id)
+    if (!s?.polar_customer_id)
       warnings.push(
         "No Polar account linked — every account must exist in Polar, even on an Angel Trial.",
       );
-    if ((s.status ?? "trialing") === "trialing" && plan !== "angel_trial" && plan !== "angel")
+    if ((s?.status ?? "trialing") === "trialing" && plan !== "angel_trial" && plan !== "angel")
       warnings.push(
         `Trialing on the ${plan} plan — trials are Angel-only, this account must pay in full before access.`,
       );
@@ -96,16 +102,16 @@ async function buildOrgs(): Promise<OrgRow[]> {
       firmName: p.firm_name ?? null,
       investorType: p.investor_type,
       plan,
-      status: s.status ?? "trialing",
+      status: s?.status ?? "trialing",
       seats: paidSeats,
       seatsUsed: used,
       ceiling,
-      polarCustomerId: s.polar_customer_id ?? null,
-      polarSubscriptionId: s.polar_subscription_id ?? null,
-      polarProductId: s.polar_product_id ?? null,
-      currentPeriodEnd: s.current_period_end ?? null,
-      manualOverrideAt: s.manual_override_at ?? null,
-      overrideReason: s.override_reason ?? null,
+      polarCustomerId: s?.polar_customer_id ?? null,
+      polarSubscriptionId: s?.polar_subscription_id ?? null,
+      polarProductId: s?.polar_product_id ?? null,
+      currentPeriodEnd: s?.current_period_end ?? null,
+      manualOverrideAt: s?.manual_override_at ?? null,
+      overrideReason: s?.override_reason ?? null,
       warnings,
     } satisfies OrgRow;
   });
@@ -115,7 +121,7 @@ async function buildOrgs(): Promise<OrgRow[]> {
 export const listOrganizations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     const orgs = await buildOrgs();
     orgs.sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
     return {
@@ -137,7 +143,7 @@ export const listOrganizations = createServerFn({ method: "POST" })
  */
 export const updateOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         userId: z.string().uuid(),
@@ -151,7 +157,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Trials are Angel-only; every other plan is pay-first.
@@ -193,7 +199,7 @@ export const updateOrganization = createServerFn({ method: "POST" })
       signature_valid: true,
       outcome: "applied",
       matched_user_id: data.userId,
-      matched_email: (profile as any)?.email ?? null,
+      matched_email: profile?.email ?? null,
       mapped_plan: data.plan,
       mapped_seats: seats,
       mapping_source: "none",
@@ -211,9 +217,28 @@ export const updateOrganization = createServerFn({ method: "POST" })
  * from it (profile, subscription, seats, roles). Developers cannot delete
  * their own account, so the dashboard can never lock itself out.
  */
+/**
+ * Best-effort revocation of every provider grant held for a user, used on
+ * account deletion. Failures are logged and swallowed: a token Google has
+ * already dropped, or a transient outage, must not block the deletion the user
+ * asked for. The row is removed either way by the cascade.
+ */
+async function revokeConnectedProviders(userId: string) {
+  const { GMAIL_CONNECTOR_ID } = await import("@/server/gmail.server");
+  const { getConnectionKeyForUser } = await import("@/server/appUserConnections.server");
+  const { revokeGoogleToken } = await import("@/server/googleOAuth.server");
+
+  try {
+    const refreshToken = await getConnectionKeyForUser(userId, GMAIL_CONNECTOR_ID);
+    if (refreshToken) await revokeGoogleToken(refreshToken);
+  } catch (error) {
+    console.error(`[admin] Could not revoke provider grant for ${userId}:`, error);
+  }
+}
+
 export const deleteOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         userId: z.string().uuid(),
@@ -222,7 +247,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     if (data.userId === context.userId) throw new Error("You cannot delete your own account.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -232,10 +257,16 @@ export const deleteOrganization = createServerFn({ method: "POST" })
       .eq("id", data.userId)
       .maybeSingle();
 
-    const email = normalizeEmail((profile as any)?.email);
+    const email = normalizeEmail(profile?.email);
     if (!email || email !== normalizeEmail(data.confirmEmail)) {
       throw new Error("Confirmation email does not match this account.");
     }
+
+    // Revoke any connected mailbox BEFORE the auth user goes. Deleting the
+    // user cascades the stored token row away, but the grant lives at Google —
+    // dropping the row without revoking would leave a live grant we can no
+    // longer see or reach, contradicting the deletion promise in /privacy.
+    await revokeConnectedProviders(data.userId);
 
     await supabaseAdmin.from("team_members").delete().eq("owner_id", data.userId);
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
@@ -258,7 +289,7 @@ export const deleteOrganization = createServerFn({ method: "POST" })
 export const backfillOwnerSeats = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [profiles, members] = await Promise.all([
@@ -269,14 +300,10 @@ export const backfillOwnerSeats = createServerFn({ method: "POST" })
     if (members.error) throw members.error;
 
     const hasOwnerSeat = new Set(
-      ((members.data ?? []) as any[])
-        .filter((m) => m.owner_id === m.member_user_id)
-        .map((m) => m.owner_id),
+      (members.data ?? []).filter((m) => m.owner_id === m.member_user_id).map((m) => m.owner_id),
     );
 
-    const missing = ((profiles.data ?? []) as any[]).filter(
-      (p) => p.email && !hasOwnerSeat.has(p.id),
-    );
+    const missing = (profiles.data ?? []).filter((p) => p.email && !hasOwnerSeat.has(p.id));
     if (missing.length === 0) return { created: 0 };
 
     let created = 0;
@@ -312,7 +339,7 @@ export const backfillOwnerSeats = createServerFn({ method: "POST" })
  */
 export const clearOrganizationSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         userId: z.string().uuid(),
@@ -321,7 +348,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertDeveloper(context as any);
+    await assertDeveloper(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const row = {
@@ -354,7 +381,7 @@ export const clearOrganizationSubscription = createServerFn({ method: "POST" })
       signature_valid: true,
       outcome: "applied",
       matched_user_id: data.userId,
-      matched_email: (profile as any)?.email ?? null,
+      matched_email: profile?.email ?? null,
       mapped_plan: "angel_trial",
       mapped_seats: 1,
       mapping_source: "none",

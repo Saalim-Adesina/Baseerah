@@ -12,10 +12,17 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsDeveloper, useSession } from "@/lib/account";
-import { Menu, X } from "lucide-react";
+import { Menu, Settings, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import appCss from "../styles.css?url";
-import logoAsset from "@/assets/baseerah-logo.png.asset.json";
+import navbarLogo from "@/assets/navbar_logo.png";
 import { reportClientError } from "../lib/client-error-reporting";
 import {
   clearStaleChunkReloadFlag,
@@ -55,8 +62,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   if (stale) return null;
-
-
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -120,6 +125,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/**
+ * Google's OAuth consent screen requires a privacy policy and terms URL, and
+ * reviewers check that both are reachable from the app itself — not just as
+ * bare URLs pasted into the console.
+ */
+function SiteFooter() {
+  return (
+    <footer className="mt-16 border-t border-border">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-xs text-muted-foreground">
+        <p>&copy; {new Date().getFullYear()} Baseerah</p>
+        <nav className="flex gap-4">
+          <Link to="/privacy" className="transition-colors hover:text-foreground">
+            Privacy
+          </Link>
+          <Link to="/terms" className="transition-colors hover:text-foreground">
+            Terms
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -158,38 +186,82 @@ function TopNav() {
   const mobileCtaClass =
     "block rounded-md bg-primary px-3 py-2.5 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90";
 
+  // Pipeline and New deal are the working surface and stay in the bar; the
+  // account-level destinations live behind the gear so the bar stays short.
   const NavLinks = ({ mobile = false }: { mobile?: boolean }) => (
     <>
       {user ? (
         <>
-          <Link to="/pipeline" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/pipeline"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             Pipeline
           </Link>
-          <Link to="/deals/new" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
+          <Link
+            to="/deals/new"
+            className={mobile ? mobileLinkClass : linkClass}
+            onClick={() => mobile && setMobileOpen(false)}
+          >
             New deal
           </Link>
-          <Link to="/thesis" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
-            Thesis
-          </Link>
-          <Link to="/billing" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
-            Plan
-          </Link>
-          {isDeveloper ? (
-            <Link to="/admin" className={mobile ? mobileLinkClass : linkClass} onClick={() => mobile && setMobileOpen(false)}>
-              Admin
-            </Link>
-          ) : null}
         </>
       ) : null}
     </>
   );
 
+  const settingsLinks: Array<{ to: string; label: string }> = [
+    { to: "/thesis", label: "Thesis" },
+    { to: "/settings", label: "Settings" },
+    ...(isDeveloper ? [{ to: "/admin", label: "Admin" }] : []),
+  ];
+
+  // Mobile keeps one panel: the same destinations, below a rule.
+  const SettingsLinks = () => (
+    <>
+      {settingsLinks.map(({ to, label }) => (
+        <Link key={to} to={to} className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+          {label}
+        </Link>
+      ))}
+    </>
+  );
+
+  const SettingsMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Account menu"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-secondary data-[state=open]:text-foreground"
+      >
+        <Settings className="h-5 w-5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {settingsLinks.map(({ to, label }) => (
+          <DropdownMenuItem key={to} asChild>
+            <Link to={to} className="w-full cursor-pointer">
+              {label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const AuthActions = ({ mobile = false }: { mobile?: boolean }) => (
     <>
       {loading ? null : user ? (
-        <button type="button" onClick={handleSignOut} className={mobile ? mobileLinkClass : linkClass}>
-          Sign out
-        </button>
+        mobile ? (
+          <button type="button" onClick={handleSignOut} className={mobileLinkClass}>
+            Sign out
+          </button>
+        ) : (
+          <SettingsMenu />
+        )
       ) : (
         <>
           <Link
@@ -216,13 +288,8 @@ function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-5">
-        <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center gap-2.5">
-          <img
-            src={logoAsset.url}
-            alt="Baseerah"
-            className="h-7 w-7 shrink-0 rounded-md object-contain"
-          />
-          <span className="hidden font-display text-lg tracking-tight sm:inline">Baseerah</span>
+        <Link to={user ? "/pipeline" : "/"} className="flex shrink-0 items-center">
+          <img src={navbarLogo} alt="Baseerah" className="h-7 w-auto shrink-0 object-contain" />
         </Link>
 
         {/* Desktop nav */}
@@ -248,7 +315,8 @@ function TopNav() {
           {/* Mobile slide-out panel */}
           <div
             className={
-              "fixed inset-0 z-50 sm:hidden " + (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
+              "fixed inset-0 z-50 sm:hidden " +
+              (mobileOpen ? "pointer-events-auto" : "pointer-events-none")
             }
             aria-hidden={!mobileOpen}
           >
@@ -278,6 +346,12 @@ function TopNav() {
               </div>
               <nav className="mt-6 flex flex-col gap-1">
                 <NavLinks mobile />
+                {user ? (
+                  <>
+                    <div className="my-3 border-t border-border" />
+                    <SettingsLinks />
+                  </>
+                ) : null}
                 <div className="my-3 border-t border-border" />
                 <AuthActions mobile />
               </nav>
@@ -318,13 +392,15 @@ function RootComponent() {
     };
   }, []);
 
-
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <TopNav />
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <div className="flex-1">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </div>
+        <SiteFooter />
       </div>
       <Toaster position="top-right" />
     </QueryClientProvider>

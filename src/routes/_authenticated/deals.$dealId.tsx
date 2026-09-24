@@ -41,7 +41,7 @@ function DealLayout() {
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been deleted from this browser.
         </p>
-        <Link to="/" className="mt-6 inline-block text-primary underline">
+        <Link to="/pipeline" className="mt-6 inline-block text-primary underline">
           Back to pipeline
         </Link>
       </main>
@@ -51,7 +51,7 @@ function DealLayout() {
   return (
     <main className="mx-auto max-w-7xl px-5 py-8">
       <Link
-        to="/"
+        to="/pipeline"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Pipeline
@@ -62,9 +62,11 @@ function DealLayout() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-4xl leading-none">{deal.company}</h1>
-            <Badge variant="outline" className="font-mono text-[10px]">
-              {deal.round}
-            </Badge>
+            {deal.round ? (
+              <Badge variant="outline" className="font-mono text-[10px]">
+                {deal.round}
+              </Badge>
+            ) : null}
             {deal.analysis ? (
               <Badge className="text-[10px] uppercase tracking-wider">
                 {deal.analysis.recommendation}

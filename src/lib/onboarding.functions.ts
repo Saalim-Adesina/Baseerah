@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { OnboardingAnswers } from "@/lib/onboarding";
 import type { InvestorType } from "@/lib/account";
@@ -53,23 +54,59 @@ export const getMyOnboarding = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Every answer is optional/nullable because the wizard persists partial state on each step,
+ * but the object is `.strict()`: the parsed result is spread straight into the
+ * `onboarding_responses` upsert, so unknown keys must never reach the table.
+ */
+const onboardingAnswersInput = z
+  .object({
+    deals_per_month: z.string().max(200).nullish(),
+    review_method: z.string().max(200).nullish(),
+    hours_per_month: z.string().max(200).nullish(),
+    tools: z.array(z.string().max(200)).max(100).optional(),
+    industries: z.array(z.string().max(200)).max(100).optional(),
+    industries_other: z.string().max(500).nullish(),
+    thesis_sentence: z.string().max(4000).nullish(),
+    check_size: z.string().max(200).nullish(),
+    heard_from: z.string().max(200).nullish(),
+    heard_from_detail: z.string().max(500).nullish(),
+    connect_inbox: z.boolean().nullish(),
+  })
+  .strict();
+
+const onboardingProfileInput = z
+  .object({
+    full_name: z.string().max(200).nullish(),
+    firm_name: z.string().max(200).nullish(),
+    investor_type: z.enum(["angel", "syndicate", "incubator", "vc", "family_office"]).nullish(),
+  })
+  .strict();
+
+const saveOnboardingInput = z
+  .object({
+    answers: onboardingAnswersInput,
+    profile: onboardingProfileInput.optional(),
+    complete: z.boolean().optional(),
+  })
+  .strict();
+
 export const saveMyOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      answers: OnboardingAnswers;
-      profile?: Partial<OnboardingProfile>;
-      complete?: boolean;
-    }) => input,
-  )
+  .validator((input: unknown) => saveOnboardingInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const now = new Date().toISOString();
 
+    /** Keys the client omitted are dropped rather than written as `undefined`. */
+    const answers = Object.fromEntries(
+      Object.entries(data.answers).filter(([, value]) => value !== undefined),
+    ) as Partial<OnboardingAnswers>;
+
     const { error } = await supabase.from("onboarding_responses").upsert(
       {
         user_id: userId,
-        ...data.answers,
+        ...answers,
         ...(data.complete ? { completed_at: now } : {}),
         updated_at: now,
       },
@@ -88,7 +125,6 @@ export const saveMyOnboarding = createServerFn({ method: "POST" })
     if (data.profile?.investor_type) profilePatch.investor_type = data.profile.investor_type;
     if (data.complete) profilePatch.onboarding_completed_at = now;
 
-
     if (Object.keys(profilePatch).length > 0) {
       const { error: profileError } = await supabase
         .from("profiles")
@@ -99,4 +135,3 @@ export const saveMyOnboarding = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
-

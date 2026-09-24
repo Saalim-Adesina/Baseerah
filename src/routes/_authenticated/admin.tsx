@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Loader2, RefreshCw, ScrollText, Search, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  ScrollText,
+  Search,
+  Settings2,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +34,18 @@ import {
 import { APP_PLANS, APP_STATUSES, planDisplayName } from "@/lib/billing-rules";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  // The real gate is server-side (`assertDeveloper` in admin.functions.ts). This
+  // is the UX half of it: without it a non-developer who deep-links here watches
+  // every server call fail and lands in the page's `denied` state.
+  beforeLoad: async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) throw redirect({ to: "/auth", search: { mode: "signin" } });
+    const { data, error } = await supabase.rpc("has_role", {
+      _user_id: auth.user.id,
+      _role: "developer",
+    });
+    if (error || !data) throw redirect({ to: "/pipeline" });
+  },
   head: () => ({
     meta: [
       { title: "Developer · Accounts & subscriptions" },
@@ -102,9 +123,9 @@ function AdminPage() {
           <h1 className="mt-1 text-4xl">All accounts &amp; subscriptions</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Every edit here goes through the same rulebook the webhook uses — seats are clamped to
-            the plan, and each change is stamped and written to the billing log. Your own
-            developer account is listed too, so you can run a plan of your own — but it can never
-            be deleted from here.
+            the plan, and each change is stamped and written to the billing log. Your own developer
+            account is listed too, so you can run a plan of your own — but it can never be deleted
+            from here.
           </p>
         </div>
         <div className="flex gap-2">
@@ -112,11 +133,18 @@ function AdminPage() {
             <RefreshCw className="h-4 w-4" /> Refresh
           </Button>
           <Button asChild variant="outline">
-            <Link to="/billing">My plan</Link>
+            <Link to="/settings" search={{ tab: "billing" }}>
+              My plan
+            </Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/webhook-audit">
               <ScrollText className="h-4 w-4" /> Billing log
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/environment">
+              <Settings2 className="h-4 w-4" /> Environment
             </Link>
           </Button>
           <Button
@@ -392,7 +420,6 @@ function OrgCard({
         </form>
       ) : null}
 
-
       {open ? (
         <div className="mt-4 grid gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3 md:grid-cols-[1fr_auto] md:items-end">
           <label className="text-xs text-muted-foreground">
@@ -420,7 +447,11 @@ function OrgCard({
               setDeleting(false);
             }}
           >
-            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {deleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
             Delete account
           </Button>
         </div>
