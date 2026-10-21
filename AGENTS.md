@@ -1,5 +1,10 @@
 # Agent notes
 
+`docs/PRD.md` is the master plan: the source of truth for product scope, roles
+and requirements (FR/NFR IDs). Read it before planning a feature, and reference
+its IDs in plans and issues. Where code and PRD disagree, flag it rather than
+silently following either.
+
 This project is self-hosted: own Supabase project, own Google OAuth client,
 Azure AI Foundry for models, Vercel for hosting. It is no longer connected to
 Lovable — do not re-add `@lovable.dev/*` packages, the AI gateway, or the

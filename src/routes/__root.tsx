@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   useRouter,
   useNavigate,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -366,6 +367,8 @@ function TopNav() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  // The marketing page at / carries its own header and footer.
+  const isLanding = useRouterState({ select: (state) => state.location.pathname === "/" });
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
@@ -395,12 +398,12 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex min-h-screen flex-col">
-        <TopNav />
+        {isLanding ? null : <TopNav />}
         <div className="flex-1">
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </div>
-        <SiteFooter />
+        {isLanding ? null : <SiteFooter />}
       </div>
       <Toaster position="top-right" />
     </QueryClientProvider>

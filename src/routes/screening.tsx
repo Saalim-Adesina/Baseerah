@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PLANS } from "@/lib/plans";
 import { INVESTOR_TYPES } from "@/lib/account";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/screening")({
   head: () => ({
     meta: [
       { title: "Baseerah — Deal Screening for Angel Investors" },
