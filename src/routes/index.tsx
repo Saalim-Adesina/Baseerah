@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Timeline, { type TimelineItem } from "@/components/ui/timeline";
 import logoMark from "@/assets/logo-mark.png";
 import cityPhoto from "@/assets/landing-city.jpg";
 import handoverPhoto from "@/assets/landing-handover.jpg";
@@ -98,17 +99,46 @@ const SALE_TYPES = [
   },
 ];
 
-const STEPS = [
-  { title: "Tell us what you're looking for", body: "Whether you want to buy or sell." },
-  { title: "Meet the right counterparty", body: "We connect you with vetted investors." },
-  { title: "Close with confidence", body: "We take care of the details along the way." },
-  { title: "Settle securely", body: "Funds and shares change hands safely." },
+// Module-level so the timeline's animation setup sees a stable array.
+const STEPS: TimelineItem[] = [
+  {
+    id: "step-1",
+    label: "01",
+    title: "Tell us what you're looking for",
+    description: "Whether you want to buy or sell.",
+  },
+  {
+    id: "step-2",
+    label: "02",
+    title: "Meet the right counterparty",
+    description: "We connect you securely with vetted institutaitonal investors, ",
+  },
+  {
+    id: "step-3",
+    label: "03",
+    title: "Close with confidence",
+    description: "We take care of the details along the way.",
+  },
+  {
+    id: "step-4",
+    label: "04",
+    title: "Settle securely",
+    description: "Funds and shares change hands safely.",
+  },
 ];
 
 const FAQ = [
   {
+    q: "What is Baseerah?",
+    a: "Baseerah is a Qatar-based startup helping investors unlock liquidity from their private holdings, from fund interests to direct stakes in private companies.",
+  },
+  {
+    q: "How is Baseerah different from a bank deal brokerage?",
+    a: "Baseerah value propsotiions is built on delivering better-matched counterparties and a faster path from first conversation to close for investors.",
+  },
+  {
     q: "Is Baseerah live?",
-    a: "Not yet. We're in early development, and nothing on this site is an offer to buy or sell securities.",
+    a: "Baseerah is at it's early stage building partnerships with relevant stakeholders in Qatar's private-markets landscape ahead of launch.",
   },
   {
     q: "Who is it for?",
@@ -116,52 +146,90 @@ const FAQ = [
   },
 ];
 
+// The five things Baseerah gives an investor, floating around the headline.
 const HERO_CHIPS = [
   {
-    label: "GP-led",
-    className: "top-[18%] left-[4%]",
+    label: "Liquidity",
+    className: "top-[30%] left-[35%]",
     tint: "bg-[#77c9b3]",
     icon: (
       <>
-        <path d="M3 12h18" />
-        <path d="M12 3v18" />
+        <path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11Z" />
       </>
     ),
   },
   {
-    label: "LP-led",
-    className: "top-[12%] right-[8%]",
+    label: "Speed",
+    className: "top-[23%] right-[5%]",
     tint: "bg-[#c9eadf]",
     icon: (
       <>
-        <path d="M7 17 17 7" />
-        <path d="M7 7h10v10" />
+        <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z" />
       </>
     ),
   },
   {
-    label: "Founder-led",
-    className: "top-[56%] right-[2%]",
+    label: "Matching",
+    className: "top-[55%] right-[3%]",
     tint: "bg-[#77c9b3]",
     icon: (
       <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
+        <circle cx="9" cy="12" r="5" />
+        <circle cx="15" cy="12" r="5" />
       </>
     ),
   },
   {
-    label: "Starting in Doha",
-    className: "top-[64%] left-[7%]",
+    label: "Simplicity",
+    className: "top-[40%] left-[3%]",
     tint: "bg-[#c9eadf]",
     icon: (
       <>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
+        <path d="M5 12.5 10 17 19 7" />
+      </>
+    ),
+  },
+  {
+    label: "Flexibility",
+    className: "top-[64%] left-[0%]",
+    tint: "bg-[#77c9b3]",
+    icon: (
+      <>
+        <path d="M4 7h10" />
+        <path d="M18 7h2" />
+        <circle cx="16" cy="7" r="2" />
+        <path d="M4 17h2" />
+        <path d="M10 17h10" />
+        <circle cx="8" cy="17" r="2" />
       </>
     ),
   },
 ];
+
+// Navbar morph: full-width and transparent over the hero, a compact dark-gray
+// pill once the hero has scrolled away. `paintNavbar` maps progress 0..1 onto
+// inline styles so each animation frame skips React entirely.
+const NAVBAR_MS = 420;
+const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+function paintNavbar(wrap: HTMLElement, bar: HTMLElement, p: number) {
+  const inset = `${lerp(0, 12, p)}px`;
+  wrap.style.paddingTop = inset;
+  wrap.style.paddingLeft = inset;
+  wrap.style.paddingRight = inset;
+  const roomy = window.innerWidth >= 640;
+  bar.style.maxWidth = `${lerp(1280, 920, p)}px`;
+  bar.style.paddingTop = bar.style.paddingBottom = `${lerp(roomy ? 24 : 20, 10, p)}px`;
+  bar.style.paddingLeft = bar.style.paddingRight = `${lerp(roomy ? 32 : 20, roomy ? 24 : 16, p)}px`;
+  bar.style.borderRadius = `${lerp(0, 28, p)}px`;
+  bar.style.backgroundColor = `rgba(38, 45, 56, ${lerp(0, 0.92, p)})`;
+  bar.style.borderColor = `rgba(255, 255, 255, ${lerp(0, 0.08, p)})`;
+  bar.style.boxShadow = `0 12px 32px rgba(0, 0, 0, ${lerp(0, 0.28, p)})`;
+  const blur = `blur(${lerp(0, 14, p)}px)`;
+  bar.style.backdropFilter = blur;
+  bar.style.setProperty("-webkit-backdrop-filter", blur);
+}
 
 function Icon({ children, size, stroke }: { children: ReactNode; size: number; stroke: string }) {
   return (
@@ -201,20 +269,68 @@ function Wordmark({ size }: { size: "nav" | "footer" }) {
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const heroRef = useRef<HTMLElement>(null);
+  const navWrapRef = useRef<HTMLElement>(null);
+  const navBarRef = useRef<HTMLDivElement>(null);
+
+  // Tween the navbar between its two looks whenever the hero enters or leaves
+  // the viewport; a fresh trigger mid-tween starts from wherever it got to.
+  useEffect(() => {
+    const hero = heroRef.current;
+    const wrap = navWrapRef.current;
+    const bar = navBarRef.current;
+    if (!hero || !wrap || !bar) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let progress = 0;
+    let from = 0;
+    let target = 0;
+    let startedAt = 0;
+    let frame = 0;
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - startedAt) / NAVBAR_MS);
+      progress = lerp(from, target, easeOutCubic(t));
+      paintNavbar(wrap, bar, progress);
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+
+    const animateTo = (next: number) => {
+      if (next === target) return;
+      target = next;
+      from = progress;
+      cancelAnimationFrame(frame);
+      if (reduceMotion) {
+        progress = next;
+        paintNavbar(wrap, bar, progress);
+        return;
+      }
+      startedAt = performance.now();
+      frame = requestAnimationFrame(step);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => animateTo(entry?.isIntersecting ? 0 : 1),
+      { rootMargin: "-96px 0px 0px 0px" },
+    );
+    observer.observe(hero);
+    const onResize = () => paintNavbar(wrap, bar, progress);
+    window.addEventListener("resize", onResize);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   return (
     <main className="bg-[#131922] font-['Geist',system-ui,sans-serif] text-[#131922] antialiased">
-      {/* HERO: photo runs behind the navbar */}
-      <section
-        id="top"
-        className="relative flex min-h-[640px] flex-col overflow-hidden bg-[#131922] sm:min-h-[860px]"
-      >
-        <img src={heroPhoto} alt="" className={`${photo} object-[70%_30%]`} />
+      {/* NAVBAR: pinned; morphs into a floating pill once the hero is gone */}
+      <header ref={navWrapRef} className="fixed inset-x-0 top-0 z-50">
         <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(19,25,34,.55)_0%,rgba(19,25,34,.25)_35%,rgba(19,25,34,.7)_75%,#131922_100%)]"
-        />
-        <header className="relative z-[2] mx-auto box-border w-full max-w-[1280px] px-5 py-5 sm:px-8 sm:py-6">
+          ref={navBarRef}
+          className="mx-auto box-border w-full max-w-[1280px] border border-transparent px-5 py-5 sm:px-8 sm:py-6"
+        >
           <div className="flex items-center justify-between gap-4">
             <a href="#top" aria-label="Baseerah home" onClick={closeMenu}>
               <Wordmark size="nav" />
@@ -272,9 +388,22 @@ function Landing() {
               ))}
             </nav>
           ) : null}
-        </header>
+        </div>
+      </header>
 
-        <div className="relative z-[1] mx-auto box-border flex w-full max-w-[1100px] flex-1 flex-col items-center justify-end px-5 pb-20 pt-16 text-center sm:px-8 sm:pb-[120px] sm:pt-20">
+      {/* HERO: photo runs behind the navbar */}
+      <section
+        ref={heroRef}
+        id="top"
+        className="relative flex min-h-[640px] flex-col overflow-hidden bg-[#131922] sm:min-h-[860px]"
+      >
+        <img src={heroPhoto} alt="" className={`${photo} object-[70%_100%]`} />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(19,25,34,.55)_0%,rgba(19,25,34,.25)_35%,rgba(19,25,34,.7)_75%,#131922_100%)]"
+        />
+
+        <div className="relative z-[1] mx-auto box-border flex w-full max-w-[1100px] flex-1 flex-col items-center justify-end px-5 pb-20 pt-32 text-center sm:px-8 sm:pb-[120px] sm:pt-36">
           {HERO_CHIPS.map((chip) => (
             <span
               key={chip.label}
@@ -360,11 +489,6 @@ function Landing() {
           <div className="w-full max-w-[420px] flex-[1_1_300px] rounded-[20px] border border-[#131922]/[.07] bg-white/85 p-6 shadow-[0_8px_28px_rgba(19,25,34,.07)]">
             <div className="flex items-center justify-between">
               <p className="m-0 text-[15px] font-semibold">Secondary request</p>
-              <span
-                className={`${mono} rounded-full bg-[#e4efea] px-2.5 py-1 text-[11px] text-[#2b6e5f]`}
-              >
-                Illustrative
-              </span>
             </div>
             <p
               className={`${mono} mb-1 mt-5 text-[11px] uppercase tracking-[0.08em] text-[#5b6572]`}
@@ -429,38 +553,19 @@ function Landing() {
         </section>
       </div>
 
-      {/* HOW IT WORKS (dark split) */}
-      <section id="how" className="flex flex-wrap bg-[#131922]">
-        <div className="box-border min-w-0 flex-[1_1_520px] px-5 py-20 sm:px-14 sm:py-24">
-          <p className={`${eyebrowDark} mb-4`}>• How it works</p>
-          <h2 className="m-0 font-['Geist',sans-serif] text-[clamp(40px,4.6vw,64px)] font-normal leading-[1.04] tracking-[-0.045em] text-[#77c9b3]">
-            Simple, from start to finish
-          </h2>
-          <ol className="m-0 mt-10 flex list-none flex-col p-0 sm:mt-12">
-            {STEPS.map((step, index) => (
-              <li
-                key={step.title}
-                className="flex gap-6 border-t border-white/[.12] py-5 last:border-b"
-              >
-                <span className={`${mono} pt-[3px] text-[13px] text-[#77c9b3]`}>
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="m-0 text-lg font-medium text-white">{step.title}</p>
-                  <p className="mt-1.5 text-[15px] leading-[1.55] text-[#a9b4bf]">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div className="relative min-h-[360px] flex-[1_1_480px] overflow-hidden bg-[#1c2430] md:min-h-[640px]">
-          <img
-            src={handoverPhoto}
-            alt="One person handing a document folder to another"
-            className={photo}
-          />
-        </div>
-      </section>
+      {/* HOW IT WORKS: pinned horizontal timeline, scrubbed by scroll */}
+      <Timeline
+        id="how"
+        items={STEPS}
+        title="How it works"
+        backgroundColor="#131922"
+        textColor="#ffffff"
+        mutedTextColor="#a9b4bf"
+        activeColor="#77c9b3"
+        imageUrl={handoverPhoto}
+        imageAlt="One person handing a document folder to another"
+        duration={1.4}
+      />
 
       {/* FAQ */}
       <section id="faq" className="bg-[#f6faf8] px-5 py-20 sm:px-8 sm:py-[120px]">
