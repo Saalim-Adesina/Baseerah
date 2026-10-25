@@ -1,8 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DEFAULT_THESIS, type Analysis, type Deal, type PassEmail, type Round, type Thesis, type Thread } from "@/lib/types";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  DEFAULT_THESIS,
+  type Analysis,
+  type Deal,
+  type PassEmail,
+  type Round,
+  type Thesis,
+  type Thread,
+} from "@/lib/types";
 
 /**
  * Server-side pipeline storage. Every query runs through the caller's own
@@ -10,20 +18,6 @@ import { DEFAULT_THESIS, type Analysis, type Deal, type PassEmail, type Round, t
  * decides which account's rows are visible — the tenancy rule lives in the
  * database, not here.
  */
-
-/**
- * `src/integrations/supabase/types.ts` is generated from the database and will
- * not know about `deals`, `theses`, `deal_threads` or `local_import_marks`
- * until it is regenerated after the migration is applied:
- *
- *   supabase gen types typescript --project-id <ref> > src/integrations/supabase/types.ts
- *
- * Until then the caller's client is addressed untyped; the row shapes below are
- * the contract this module enforces either way.
- */
-function db(context: { supabase: unknown }) {
-  return context.supabase as SupabaseClient<never, "public", never>;
-}
 
 /* ---------------- row <-> app type mapping ---------------- */
 
@@ -61,7 +55,7 @@ function toDeal(row: DealRow): Deal {
     oneLiner: row.one_liner,
     sector: row.sector,
     geography: row.geography,
-    round: row.round as Round,
+    round: row.round as Round | "",
     raising: row.raising,
     valuation: row.valuation,
     traction: row.traction,
@@ -80,7 +74,10 @@ function toDeal(row: DealRow): Deal {
 }
 
 /** App-shaped patch to column names. Only defined keys are written. */
-function toColumns(patch: Partial<Deal>) {
+type DealUpdate = Database["public"]["Tables"]["deals"]["Update"];
+type ThreadUpdate = Database["public"]["Tables"]["deal_threads"]["Update"];
+
+function toColumns(patch: Partial<Deal>): DealUpdate {
   const map: Record<string, string> = {
     company: "company",
     website: "website",
@@ -158,7 +155,7 @@ const uuid = z.string().uuid();
 export const listDeals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await db(context)
+    const { data, error } = await context.supabase
       .from("deals")
       .select(DEAL_COLUMNS)
       .order("created_at", { ascending: false });
@@ -168,34 +165,53 @@ export const listDeals = createServerFn({ method: "GET" })
 
 export const createDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ deal: dealInput, gmailMessageId: z.string().max(200).optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: accountId, error: accountError } = await db(context).rpc("current_account_id");
+    const { data: accountId, error: accountError } =
+      await context.supabase.rpc("current_account_id");
     if (accountError) throw new Error(accountError.message);
 
-    const { data: row, error } = await db(context)
+    const { data: row, error } = await context.supabase
       .from("deals")
       .insert({
         ...toColumns(data.deal as Partial<Deal>),
         account_id: accountId,
         created_by: context.userId,
         ...(data.gmailMessageId ? { gmail_message_id: data.gmailMessageId } : {}),
-      } as never)
+      })
       .select(DEAL_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
     return toDeal(row as unknown as DealRow);
   });
 
+/**
+ * Gmail message ids already imported as deals. Seeds the skip list on a re-scan
+ * so a mailbox that has been scanned before does not re-extract the same decks
+ * (each extraction is a paid Document Intelligence call).
+ */
+export const listImportedGmailMessageIds = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("deals")
+      .select("gmail_message_id")
+      .not("gmail_message_id", "is", null);
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as unknown as { gmail_message_id: string | null }[])
+      .map((row) => row.gmail_message_id)
+      .filter((id): id is string => Boolean(id));
+  });
+
 export const updateDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: uuid, patch: dealInput }).parse(input))
+  .validator((input: unknown) => z.object({ id: uuid, patch: dealInput }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await db(context)
+    const { data: row, error } = await context.supabase
       .from("deals")
-      .update(toColumns(data.patch as Partial<Deal>) as never)
+      .update(toColumns(data.patch as Partial<Deal>))
       .eq("id", data.id)
       .select(DEAL_COLUMNS)
       .single();
@@ -205,9 +221,9 @@ export const updateDeal = createServerFn({ method: "POST" })
 
 export const deleteDeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .validator((input: unknown) => z.object({ id: uuid }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await db(context).from("deals").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("deals").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -262,7 +278,7 @@ const thesisInput = z.object({
 export const getThesis = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await db(context)
+    const { data, error } = await context.supabase
       .from("theses")
       .select(THESIS_COLUMNS)
       .maybeSingle();
@@ -272,13 +288,14 @@ export const getThesis = createServerFn({ method: "GET" })
 
 export const saveThesis = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ thesis: thesisInput }).parse(input))
+  .validator((input: unknown) => z.object({ thesis: thesisInput }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: accountId, error: accountError } = await db(context).rpc("current_account_id");
+    const { data: accountId, error: accountError } =
+      await context.supabase.rpc("current_account_id");
     if (accountError) throw new Error(accountError.message);
 
     const { thesis } = data;
-    const { error } = await db(context).from("theses").upsert(
+    const { error } = await context.supabase.from("theses").upsert(
       {
         account_id: accountId,
         fund_name: thesis.fundName,
@@ -291,7 +308,7 @@ export const saveThesis = createServerFn({ method: "POST" })
         model_instructions: thesis.modelInstructions,
         temperature: thesis.temperature,
         weights: thesis.weights,
-      } as never,
+      },
       { onConflict: "account_id" },
     );
     if (error) throw new Error(error.message);
@@ -324,9 +341,9 @@ const THREAD_COLUMNS = "id,deal_id,title,messages,created_at,updated_at";
 
 export const listThreads = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ dealId: uuid }).parse(input))
+  .validator((input: unknown) => z.object({ dealId: uuid }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await db(context)
+    const { data: rows, error } = await context.supabase
       .from("deal_threads")
       .select(THREAD_COLUMNS)
       .eq("deal_id", data.dealId)
@@ -337,21 +354,22 @@ export const listThreads = createServerFn({ method: "POST" })
 
 export const createThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ dealId: uuid, title: z.string().max(300).optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: accountId, error: accountError } = await db(context).rpc("current_account_id");
+    const { data: accountId, error: accountError } =
+      await context.supabase.rpc("current_account_id");
     if (accountError) throw new Error(accountError.message);
 
-    const { data: row, error } = await db(context)
+    const { data: row, error } = await context.supabase
       .from("deal_threads")
       .insert({
         account_id: accountId,
         deal_id: data.dealId,
         created_by: context.userId,
         title: data.title ?? "New discussion",
-      } as never)
+      })
       .select(THREAD_COLUMNS)
       .single();
     if (error) throw new Error(error.message);
@@ -360,7 +378,7 @@ export const createThread = createServerFn({ method: "POST" })
 
 export const saveThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         id: uuid,
@@ -370,13 +388,13 @@ export const saveThread = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
-    if (data.title !== undefined) patch["title"] = data.title;
-    if (data.messages !== undefined) patch["messages"] = data.messages;
+    const patch: ThreadUpdate = {};
+    if (data.title !== undefined) patch.title = data.title;
+    if (data.messages !== undefined) patch.messages = data.messages;
 
-    const { data: row, error } = await db(context)
+    const { data: row, error } = await context.supabase
       .from("deal_threads")
-      .update(patch as never)
+      .update(patch)
       .eq("id", data.id)
       .select(THREAD_COLUMNS)
       .single();
@@ -386,9 +404,9 @@ export const saveThread = createServerFn({ method: "POST" })
 
 export const deleteThread = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: uuid }).parse(input))
+  .validator((input: unknown) => z.object({ id: uuid }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await db(context).from("deal_threads").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("deal_threads").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -401,7 +419,7 @@ export const deleteThread = createServerFn({ method: "POST" })
  */
 export const importLocalPipeline = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         deals: z.array(dealInput).max(500),
@@ -410,7 +428,7 @@ export const importLocalPipeline = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: mark, error: markError } = await db(context)
+    const { data: mark, error: markError } = await context.supabase
       .from("local_import_marks")
       .select("user_id")
       .eq("user_id", context.userId)
@@ -418,7 +436,8 @@ export const importLocalPipeline = createServerFn({ method: "POST" })
     if (markError) throw new Error(markError.message);
     if (mark) return { imported: 0, skipped: "already-imported" as const };
 
-    const { data: accountId, error: accountError } = await db(context).rpc("current_account_id");
+    const { data: accountId, error: accountError } =
+      await context.supabase.rpc("current_account_id");
     if (accountError) throw new Error(accountError.message);
 
     if (data.deals.length) {
@@ -427,7 +446,7 @@ export const importLocalPipeline = createServerFn({ method: "POST" })
         account_id: accountId,
         created_by: context.userId,
       }));
-      const { error } = await db(context).from("deals").insert(rows as never);
+      const { error } = await context.supabase.from("deals").insert(rows);
       if (error) throw new Error(error.message);
     }
 
@@ -435,7 +454,7 @@ export const importLocalPipeline = createServerFn({ method: "POST" })
     // one over when the browser actually has one.
     if (data.thesis) {
       const { thesis } = data;
-      const { error } = await db(context).from("theses").upsert(
+      const { error } = await context.supabase.from("theses").upsert(
         {
           account_id: accountId,
           fund_name: thesis.fundName,
@@ -448,15 +467,15 @@ export const importLocalPipeline = createServerFn({ method: "POST" })
           model_instructions: thesis.modelInstructions,
           temperature: thesis.temperature,
           weights: thesis.weights,
-        } as never,
+        },
         { onConflict: "account_id" },
       );
       if (error) throw new Error(error.message);
     }
 
-    const { error: insertMarkError } = await db(context)
+    const { error: insertMarkError } = await context.supabase
       .from("local_import_marks")
-      .insert({ user_id: context.userId, deal_count: data.deals.length } as never);
+      .insert({ user_id: context.userId, deal_count: data.deals.length });
     if (insertMarkError) throw new Error(insertMarkError.message);
 
     return { imported: data.deals.length, skipped: null };

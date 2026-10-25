@@ -6,7 +6,7 @@ const TEST_SECRET = Buffer.alloc(32, 7).toString("base64");
 vi.mock("@/lib/azure.server", () => ({
   analyzeDocumentLayout: vi.fn(async (base64Source: string) => {
     if (base64Source.includes("BROKEN")) throw new Error("Document Intelligence failed");
-    return "# Acme Robotics\n\nSeed round, $2M ARR.";
+    return { markdown: "# Acme Robotics\n\nSeed round, $2M ARR.", figures: [] };
   }),
   supportsDocumentIntelligence: (mime: string, filename: string) =>
     mime === "application/pdf" || /\.(pdf|pptx|docx)$/i.test(filename),
@@ -51,19 +51,56 @@ describe("oauth state", () => {
 });
 
 describe("connection key encryption", () => {
+  const scope = { userId: "user-1", connectorId: "google_mail" };
+
   it("round-trips a refresh token", async () => {
     const { encryptConnectionKey, decryptConnectionKey } = await import("./connectionKeyCrypto");
     const token = "1//0gRefreshTokenValue";
-    const stored = encryptConnectionKey(token);
+    const stored = encryptConnectionKey(token, scope);
     expect(stored).not.toContain(token);
-    expect(decryptConnectionKey(stored)).toBe(token);
+    expect(decryptConnectionKey(stored, scope)).toBe(token);
   });
 
   it("refuses a tampered ciphertext", async () => {
     const { encryptConnectionKey, decryptConnectionKey } = await import("./connectionKeyCrypto");
-    const stored = Buffer.from(encryptConnectionKey("secret-token"), "base64");
+    const stored = Buffer.from(encryptConnectionKey("secret-token", scope), "base64");
     stored.writeUInt8(stored.readUInt8(stored.length - 1) ^ 0xff, stored.length - 1);
-    expect(() => decryptConnectionKey(stored.toString("base64"))).toThrow();
+    expect(() => decryptConnectionKey(stored.toString("base64"), scope)).toThrow();
+  });
+
+  it("refuses a ciphertext lifted into another user's row", async () => {
+    // Without AAD this decrypts cleanly, and anyone able to write the table
+    // could point their own row at someone else's mailbox token.
+    const { encryptConnectionKey, decryptConnectionKey } = await import("./connectionKeyCrypto");
+    const stored = encryptConnectionKey("victim-refresh-token", scope);
+    expect(() =>
+      decryptConnectionKey(stored, { userId: "attacker", connectorId: "google_mail" }),
+    ).toThrow();
+  });
+
+  it("refuses a ciphertext reused for a different connector", async () => {
+    const { encryptConnectionKey, decryptConnectionKey } = await import("./connectionKeyCrypto");
+    const stored = encryptConnectionKey("token", scope);
+    expect(() =>
+      decryptConnectionKey(stored, { userId: scope.userId, connectorId: "other_provider" }),
+    ).toThrow();
+  });
+
+  it("rejects a root secret that is too short to be a 256-bit key", async () => {
+    const previous = process.env["APP_USER_CONNECTION_KEY_SECRET"];
+    process.env["APP_USER_CONNECTION_KEY_SECRET"] = Buffer.from("tooshort").toString("base64");
+    try {
+      const { encryptConnectionKey } = await import("./connectionKeyCrypto");
+      expect(() => encryptConnectionKey("token", scope)).toThrow(/at least 32 bytes/);
+    } finally {
+      process.env["APP_USER_CONNECTION_KEY_SECRET"] = previous;
+    }
+  });
+
+  it("does not sign OAuth state with the encryption key", async () => {
+    // Purpose-bound subkeys: the two derivations must not collide.
+    const { connectionEncryptionKey, oauthStateSigningKey } = await import("./appSecrets");
+    expect(connectionEncryptionKey().equals(oauthStateSigningKey())).toBe(false);
   });
 });
 
@@ -81,9 +118,7 @@ describe("google authorize url", () => {
     );
 
     expect(url.origin + url.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
-    expect(url.searchParams.get("redirect_uri")).toBe(
-      "https://app.example.com/oauth/gmail/return",
-    );
+    expect(url.searchParams.get("redirect_uri")).toBe("https://app.example.com/oauth/gmail/return");
     expect(url.searchParams.get("access_type")).toBe("offline");
     expect(url.searchParams.get("prompt")).toBe("consent");
     expect(url.searchParams.get("state")).toBe("signed-state");
@@ -97,7 +132,10 @@ describe("google authorize url", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await exchangeGoogleCode("code-123", "https://app.example.com/oauth/gmail/return");
+    const result = await exchangeGoogleCode(
+      "code-123",
+      "https://app.example.com/oauth/gmail/return",
+    );
     expect(result.refreshToken).toBe("1//refresh");
 
     const call = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
@@ -109,7 +147,10 @@ describe("google authorize url", () => {
 
   it("fails loudly when Google omits the refresh token", async () => {
     const { exchangeGoogleCode } = await import("./googleOAuth.server");
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ access_token: "ya29.access" })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ access_token: "ya29.access" })),
+    );
     await expect(exchangeGoogleCode("code", "https://app.example.com/x")).rejects.toThrow(
       /did not return a refresh token/,
     );

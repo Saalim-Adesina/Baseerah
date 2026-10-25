@@ -234,7 +234,7 @@ function AuthPage() {
           </button>
         </p>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          <Link to="/" className="hover:underline">
+          <Link to="/screening" className="hover:underline">
             Back to overview
           </Link>
         </p>

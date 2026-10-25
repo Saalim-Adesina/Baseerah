@@ -5,10 +5,11 @@ import {
   appStatusFor,
   enforceTrialPolicy,
   isExtraSeatMetadata,
-  isExtraSeatProduct,
-  planForProduct,
   seatsForPlan,
 } from "@/lib/billing-rules";
+// Pure lookups only. This route is in the client route graph (routeTree.gen.ts),
+// so the env-reading catalogue resolver is imported dynamically in the handler.
+import { isExtraSeatProduct, planIdForProduct, type PolarCatalog } from "@/lib/polar-catalog";
 
 type PolarEvent = {
   type: string;
@@ -34,18 +35,20 @@ export type MappingDecision = {
 };
 
 /** Maps a Polar subscription payload onto our subscriptions row. */
-export function subscriptionUpdateFromEvent(event: PolarEvent) {
-  const decision = mappingDecision(event);
+export function subscriptionUpdateFromEvent(event: PolarEvent, catalog: PolarCatalog) {
+  const decision = mappingDecision(event, catalog);
   if (!decision.userId) return null;
   return { userId: decision.userId, row: decision.row };
 }
 
 /** Full, auditable version of the mapping: why we chose a plan and seats. */
-export function mappingDecision(event: PolarEvent): MappingDecision {
+export function mappingDecision(event: PolarEvent, catalog: PolarCatalog): MappingDecision {
   const d = event.data as {
     id?: string;
     status?: string;
     quantity?: number;
+    /** Seat-based subscriptions report their seat count here, not in `quantity`. */
+    seats?: number;
     product_id?: string;
     product?: { id?: string } | null;
     current_period_end?: string | null;
@@ -57,7 +60,7 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   const productId = d.product_id ?? d.product?.id ?? null;
   // Product id first; checkout metadata is the fallback when the product isn't
   // mapped (e.g. a sandbox product id we don't know about).
-  const fromProduct = planForProduct(productId);
+  const fromProduct = planIdForProduct(catalog, productId) ?? null;
   const metaPlan = d.metadata?.["plan"];
   const fromMeta = metaPlan && planById(metaPlan) ? metaPlan : undefined;
   const planId = fromProduct ?? fromMeta;
@@ -78,9 +81,9 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
 
   // Standalone extra-seat subscriptions must not clobber the account's plan or
   // its main subscription link — they only move the seat count.
-  const extraSeat = isExtraSeatProduct(productId) || isExtraSeatMetadata(d.metadata);
+  const extraSeat = isExtraSeatProduct(catalog, productId) || isExtraSeatMetadata(d.metadata);
   const extraSeatQuantity = Math.max(
-    Number(d.quantity ?? d.metadata?.["quantity"] ?? metaSeats ?? 1) || 1,
+    Number(d.seats ?? d.quantity ?? d.metadata?.["quantity"] ?? metaSeats ?? 1) || 1,
     1,
   );
 
@@ -146,13 +149,12 @@ export function mappingDecision(event: PolarEvent): MappingDecision {
   };
 }
 
-
-
 export const Route = createFileRoute("/api/public/polar-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const { polarWebhookSecret } = await import("@/lib/polar.server");
+        const { polarCatalog } = await import("@/server/polarCatalog");
         const secret = polarWebhookSecret();
         if (!secret) return new Response("Not configured", { status: 500 });
 
@@ -197,7 +199,7 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           return new Response("ok");
         }
 
-        const decision = mappingDecision(event);
+        const decision = mappingDecision(event, polarCatalog());
 
         const base = {
           event_id: eventId,
@@ -253,7 +255,6 @@ export const Route = createFileRoute("/api/public/polar-webhook")({
           .from("subscriptions")
           .update(appliedRow as never)
           .eq("user_id", decision.userId);
-
 
         if (error) {
           console.error("Failed to apply Polar subscription update", error.message);

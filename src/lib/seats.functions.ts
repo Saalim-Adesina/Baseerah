@@ -79,7 +79,6 @@ async function loadAccount(userId: string) {
           .eq("owner_id", userId)
           .eq("email", ownerEmail);
       }
-
     }
   }
 
@@ -90,7 +89,7 @@ async function loadAccount(userId: string) {
     .order("created_at", { ascending: true });
   if (error) throw error;
 
-  const seats: SeatRow[] = ((rows ?? []) as any[]).map((r) => ({
+  const seats: SeatRow[] = (rows ?? []).map((r) => ({
     id: r.id,
     email: r.email,
     full_name: r.full_name,
@@ -120,7 +119,7 @@ export const getMySeats = createServerFn({ method: "POST" })
 /** Assigns a seat. The plan ceiling is enforced here, not in the browser. */
 export const assignSeat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         email: z.string().trim().email().max(255),
@@ -157,9 +156,7 @@ export const assignSeat = createServerFn({ method: "POST" })
 /** Changes a seat's role. The owner seat must stay an admin seat. */
 export const updateSeatRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z.object({ id: z.string().uuid(), role: seatRole }).parse(data),
-  )
+  .validator((data: unknown) => z.object({ id: z.string().uuid(), role: seatRole }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
@@ -169,7 +166,7 @@ export const updateSeatRole = createServerFn({ method: "POST" })
       .eq("owner_id", context.userId)
       .maybeSingle();
     if (!row) throw new Error("Seat not found on your account.");
-    if ((row as any).member_user_id === context.userId && data.role !== "admin") {
+    if (row.member_user_id === context.userId && data.role !== "admin") {
       throw new Error("The account owner keeps the admin seat.");
     }
     const { error } = await supabaseAdmin
@@ -184,7 +181,7 @@ export const updateSeatRole = createServerFn({ method: "POST" })
 /** Releases a seat. The owner's own seat can never be released. */
 export const removeSeat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
@@ -194,7 +191,7 @@ export const removeSeat = createServerFn({ method: "POST" })
       .eq("owner_id", context.userId)
       .maybeSingle();
     if (!row) throw new Error("Seat not found on your account.");
-    if ((row as any).member_user_id === context.userId) {
+    if (row.member_user_id === context.userId) {
       throw new Error("You can't release the owner's admin seat.");
     }
     const { error } = await supabaseAdmin

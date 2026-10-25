@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/deals/$dealId/")({
 
 function DealAnalysis() {
   const { dealId } = Route.useParams();
+  const navigate = useNavigate();
   const hydrated = useHydrated();
   const selector = useCallback(() => getDeal(dealId), [dealId]);
   const deal = useStoreValue(selector);
@@ -62,7 +63,19 @@ function DealAnalysis() {
       }
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Request failed");
+      const message = error instanceof Error ? error.message : "Request failed";
+      // The screening meter refuses with a plan-shaped message; give those a
+      // route to fix it rather than a dead-end toast.
+      if (/screening|trial has ended|no active subscription/i.test(message)) {
+        toast.error(message, {
+          action: {
+            label: "Billing",
+            onClick: () => void navigate({ to: "/settings", search: { tab: "billing" } }),
+          },
+        });
+      } else {
+        toast.error(message);
+      }
     } finally {
       setBusy(null);
     }
@@ -120,7 +133,7 @@ function DealAnalysis() {
           <h2 className="text-2xl">Not screened yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             Run the screening to score every metric against your thesis, calibrated to the{" "}
-            {deal.round} stage, with the team weighted highest.
+            {deal.round || "unstated"} stage, with the team weighted highest.
           </p>
         </div>
       ) : (
@@ -140,7 +153,9 @@ function DealAnalysis() {
               <p className="mt-2 font-display text-2xl leading-snug">{analysis.headline}</p>
               <p className="mt-3 text-sm text-muted-foreground">{analysis.thesisFit}</p>
               <div className="mt-4 rounded-md border border-border bg-surface/60 p-4">
-                <p className="label-caps">Round-stage calibration ({deal.round})</p>
+                <p className="label-caps">
+                  Round-stage calibration ({deal.round || "stage not stated"})
+                </p>
                 <p className="mt-1.5 text-sm">{analysis.roundFitNote}</p>
               </div>
             </div>
@@ -181,7 +196,10 @@ function DealAnalysis() {
                 </span>
               </div>
               <Block title="Founder–market fit" body={analysis.humanCapital?.founderMarketFit} />
-              <Block title="LinkedIn / track record read" body={analysis.humanCapital?.linkedinRead} />
+              <Block
+                title="LinkedIn / track record read"
+                body={analysis.humanCapital?.linkedinRead}
+              />
               <Block title="Meeting notes read" body={analysis.humanCapital?.meetingNotesRead} />
               <Block title="Bias check" body={analysis.humanCapital?.biasCheck} />
               <List title="Concerns" items={analysis.humanCapital?.concerns} tone="warn" />
@@ -232,9 +250,7 @@ function DealAnalysis() {
                         {competitor.threatLevel} threat
                       </Badge>
                     </div>
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                      {competitor.positioning}
-                    </p>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{competitor.positioning}</p>
                     <p className="mt-1.5 text-sm">
                       <span className="label-caps">Our read: </span>
                       {competitor.differentiation}
@@ -332,15 +348,7 @@ function Block({ title, body }: { title: string; body?: string }) {
   );
 }
 
-function List({
-  title,
-  items,
-  tone,
-}: {
-  title: string;
-  items?: string[];
-  tone?: "warn";
-}) {
+function List({ title, items, tone }: { title: string; items?: string[]; tone?: "warn" }) {
   return (
     <div className="mt-4 first:mt-0">
       <p className="label-caps">{title}</p>

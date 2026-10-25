@@ -12,8 +12,16 @@ export const INVESTOR_TYPES: { value: InvestorType; label: string; blurb: string
   },
   { value: "syndicate", label: "Syndicate lead", blurb: "You curate deals for a backer list." },
   { value: "incubator", label: "Incubator / accelerator", blurb: "Batch screening at volume." },
-  { value: "vc", label: "Venture capital fund", blurb: "Partnership with an investment committee." },
-  { value: "family_office", label: "Family office", blurb: "Multi-asset mandate, selective private deals." },
+  {
+    value: "vc",
+    label: "Venture capital fund",
+    blurb: "Partnership with an investment committee.",
+  },
+  {
+    value: "family_office",
+    label: "Family office",
+    blurb: "Multi-asset mandate, selective private deals.",
+  },
 ];
 
 export type Profile = {
@@ -32,10 +40,6 @@ export type Subscription = {
   seats: number;
   current_period_end: string | null;
 };
-
-export function inboxAddress(userId: string) {
-  return `deals-${userId.slice(0, 8)}@inbox.baseerah.dev`;
-}
 
 export function useSession() {
   const [user, setUser] = useState<User | null>(null);

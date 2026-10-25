@@ -36,3 +36,14 @@ dist-ssr
 
 # Local secrets (Azure, Polar, etc.)
 .env.local
+# Every real value lives in .env / .env.local, which stay out of git — a real
+# Polar token reached origin/main this way once. .env.example is the documented
+# key list and is deliberately still tracked.
+.env
+.env.*.local
+!.env.example
+.env.local.bak
+
+# Supabase CLI scratch (version cache, linked-project state)
+supabase/.temp/
+media/http_baseerah_dev.png

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Copy, Loader2, Trash2, UserPlus } from "lucide-react";
+import { Copy, CreditCard, Loader2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { SEAT_ROLES, type Plan, type SeatRole } from "@/lib/plans";
 import { overageSeats, totalSeats } from "@/lib/seats";
+import { startExtraSeatCheckout } from "@/lib/billing.functions";
 import {
   assignSeat,
   getMySeats,
@@ -41,6 +42,9 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<SeatRole>("analyst");
+  const buySeats = useServerFn(startExtraSeatCheckout);
+  const [buyQty, setBuyQty] = useState(1);
+  const [buying, setBuying] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -59,8 +63,19 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
   const total = totalSeats(plan, seats);
   const used = members.length;
   const ceiling = plan.maxSeats;
-  const atLimit = ceiling !== null && used >= ceiling;
   const overage = overageSeats(plan, seats, used);
+  // Seats are hard-capped at what has been paid for, so buying is the only way
+  // the cap moves. Headroom is measured against the plan's absolute ceiling.
+  const sellsSeats = plan.extraSeatCents !== null;
+  // assignSeat rejects past the paid seat count, not the plan's hard ceiling, so
+  // the invite form has to gate on the same number or it offers a seat the
+  // server will refuse.
+  const paidCap = ceiling === null ? Infinity : total;
+  const atPaidLimit = used >= paidCap;
+  const headroom = ceiling === null ? Infinity : Math.max(ceiling - total, 0);
+  const canBuy = sellsSeats && headroom > 0;
+  const buyCents = (plan.extraSeatCents ?? 0) * buyQty;
+  const buyCost = buyCents % 100 === 0 ? buyCents / 100 : (buyCents / 100).toFixed(2);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -101,6 +116,18 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
     }
   }
 
+  async function buy(e: React.FormEvent) {
+    e.preventDefault();
+    setBuying(true);
+    try {
+      const { url } = await buySeats({ data: { seats: buyQty, origin: window.location.origin } });
+      window.location.href = url;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not start that purchase.");
+      setBuying(false);
+    }
+  }
+
   async function copyInvite(token: string | null) {
     if (!token) {
       toast.error("No invite link for this seat yet.");
@@ -128,8 +155,8 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
             {plan.extraSeatPrice && plan.extraSeatPrice !== "Included"
               ? ` — extra seats are ${plan.extraSeatPrice}`
               : ""}
-            . Your own admin seat is the first one listed; every other teammate gets their own
-            login into the shared pipeline.
+            . Your own admin seat is the first one listed; every other teammate gets their own login
+            into the shared pipeline.
           </p>
         </div>
         {overage > 0 ? (
@@ -138,6 +165,41 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
           </Badge>
         ) : null}
       </div>
+
+      {canBuy ? (
+        <form
+          onSubmit={buy}
+          className="mt-5 flex flex-wrap items-center gap-3 rounded-md border border-border/70 bg-secondary/40 px-4 py-3"
+        >
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Need more seats?</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {atPaidLimit
+                ? `You've used all ${total} seats. Buy more to keep adding teammates.`
+                : `Seats are capped at what you've paid for — ${used} of ${total} in use.`}
+            </p>
+          </div>
+          <Input
+            type="number"
+            min={1}
+            max={Number.isFinite(headroom) ? headroom : undefined}
+            value={buyQty}
+            onChange={(e) =>
+              setBuyQty(Math.max(1, Math.min(Number(e.target.value) || 1, headroom)))
+            }
+            className="w-20"
+            aria-label="Seats to buy"
+          />
+          <Button type="submit" variant="secondary" disabled={buying}>
+            {buying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CreditCard className="h-4 w-4" />
+            )}
+            Buy {buyQty} seat{buyQty > 1 ? "s" : ""} — ${buyCost}/mo
+          </Button>
+        </form>
+      ) : null}
 
       <form onSubmit={invite} className="mt-5 grid gap-3 md:grid-cols-[1.4fr_1fr_auto_auto]">
         <Input
@@ -166,7 +228,7 @@ export function TeamSeats({ plan, seats }: { plan: Plan; seats: number }) {
             ))}
           </SelectContent>
         </Select>
-        <Button type="submit" disabled={busy || atLimit}>
+        <Button type="submit" disabled={busy || atPaidLimit}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
           Assign seat
         </Button>

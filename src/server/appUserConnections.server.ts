@@ -12,7 +12,7 @@ export async function saveConnectionKeyForUser(
     {
       user_id: userId,
       connector_id: connectorId,
-      connection_key_ciphertext: encryptConnectionKey(connectionAPIKey),
+      connection_key_ciphertext: encryptConnectionKey(connectionAPIKey, { userId, connectorId }),
       account_label: accountLabel ?? null,
       updated_at: new Date().toISOString(),
     } as never,
@@ -31,7 +31,10 @@ export async function getConnectionKeyForUser(userId: string, connectorId: strin
     .maybeSingle();
   if (error) throw error;
   const row = data as { connection_key_ciphertext: string } | null;
-  return row ? decryptConnectionKey(row.connection_key_ciphertext) : null;
+  if (!row) return null;
+  // Scope must match what encryption bound the ciphertext to; a row whose
+  // ciphertext was moved from another user fails here instead of decrypting.
+  return decryptConnectionKey(row.connection_key_ciphertext, { userId, connectorId });
 }
 
 export async function getConnectionRowForUser(userId: string, connectorId: string) {
