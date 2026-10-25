@@ -5,6 +5,7 @@ import logoMark from "@/assets/logo-mark.png";
 import cityPhoto from "@/assets/landing-city.jpg";
 import handoverPhoto from "@/assets/landing-handover.jpg";
 import heroPhoto from "@/assets/landing-hero.webp";
+import saalimPhoto from "@/assets/team-saalim.webp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,10 +49,22 @@ const NAV = [
   { href: "#faq", label: "FAQ" },
 ];
 
+// Why now figures; their sources are credited once, under the "Built for" strip.
+const STAT_SOURCES = "Bain & Company, Global Private Equity Report 2026 · Fortune, Oct 2026";
+
 const STATS = [
-  { value: "$3B", label: "committed to QIA's Fund of Funds programme" },
-  { value: "6 years", label: "average exit horizon for MENA venture investors" },
-  { value: "2", label: "MENA startup IPOs in 2025" },
+  {
+    value: "$3.8T",
+    label: "locked in 32,000 unsold private-equity-backed companies",
+  },
+  {
+    value: "~40%",
+    label: "of those companies held for more than five years, up from 29% in 2019",
+  },
+  {
+    value: "2",
+    label: "MENA startup IPOs in 2025",
+  },
 ];
 
 const AUDIENCES = [
@@ -66,7 +79,7 @@ const SALE_TYPES = [
   {
     audience: "For fund managers",
     title: "GP-led",
-    body: "Give your investors an option for liquidity while you keep backing the companies you believe in.",
+    body: "Fund recapatalization and refinancing solutions into new vehicles maintaining general partner stake management.",
     icon: (
       <>
         <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -78,7 +91,7 @@ const SALE_TYPES = [
   {
     audience: "For investors and LPs",
     title: "LP-led",
-    body: "Sell a fund interest or a direct stake to a new investor, on your own timeline.",
+    body: "Liquidity solutions by trading exisisting stake to a new investor on your own timeline.",
     icon: (
       <>
         <path d="M7 17 17 7" />
@@ -89,7 +102,7 @@ const SALE_TYPES = [
   {
     audience: "For founders and teams",
     title: "Founder-led",
-    body: "Take some value off the table as the company grows, in a way that works for everyone involved.",
+    body: "Early shareholders can get financing to keep or grow their ownership, and personal liquidity backed by their equity.",
     icon: (
       <>
         <circle cx="12" cy="8" r="4" />
@@ -127,22 +140,36 @@ const STEPS: TimelineItem[] = [
   },
 ];
 
+// Made-up stake shown on the problem section's prototype card.
+const SAMPLE_LISTING = {
+  company: "Bridge AI",
+  industry: "Deep Tech",
+  location: "San Francisco",
+  price: "QAR 130.2M",
+  stake: "2.5% common equity",
+  facts: [
+    ["Company stage", "Series B"],
+    ["Seller", "VC firm"],
+    ["Buyer", "Regional family office"],
+  ],
+} as const;
+
 const FAQ = [
   {
     q: "What is Baseerah?",
     a: "Baseerah is a Qatar-based startup helping investors unlock liquidity from their private holdings, from fund interests to direct stakes in private companies.",
   },
   {
-    q: "How is Baseerah different from a bank deal brokerage?",
-    a: "Baseerah value propsotiions is built on delivering better-matched counterparties and a faster path from first conversation to close for investors.",
+    q: "How is Baseerah different from a bank or brokerage?",
+    a: "Baseerah's value proposition is built on delivering better-matched counterparties and a faster path from first conversation to close for investors.",
   },
   {
     q: "Is Baseerah live?",
-    a: "Baseerah is at it's early stage building partnerships with relevant stakeholders in Qatar's private-markets landscape ahead of launch.",
+    a: "Baseerah is in its early stage, building partnerships with relevant stakeholders in Qatar's private-markets landscape ahead of launch.",
   },
   {
     q: "Who is it for?",
-    a: "Fund managers, investors and founders in private markets, starting with Qatar.",
+    a: "Fund managers, investors, GPs, LPS, family offices trading secondaries.",
   },
 ];
 
@@ -245,6 +272,19 @@ function Icon({ children, size, stroke }: { children: ReactNode; size: number; s
       aria-hidden="true"
     >
       {children}
+    </svg>
+  );
+}
+
+const LINKEDIN = {
+  company: "https://www.linkedin.com/company/baseerah.dev",
+  founder: "https://www.linkedin.com/in/saalim-adesina/",
+};
+
+function LinkedInIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
     </svg>
   );
 }
@@ -448,7 +488,7 @@ function Landing() {
             Capital is flowing into the region, but exits take time. We think there's a better way
             to unlock value along the way.
           </p>
-          <div className="mt-10 grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-8 sm:mt-14">
+          <div className="mt-10 grid grid-cols-1 gap-8 sm:mt-14 sm:grid-cols-3">
             {STATS.map((stat) => (
               <div key={stat.value} className="border-t border-white/15 pt-5">
                 <p className="m-0 text-[44px] font-light leading-none sm:text-[52px] tracking-[-0.045em] text-white">
@@ -472,6 +512,11 @@ function Landing() {
           </span>
           {AUDIENCES.join(", ")}
         </p>
+        <p
+          className={`${mono} mx-auto mt-3 max-w-[1280px] text-center text-[11px] leading-[1.5] text-[#8a96a3]`}
+        >
+          Sources: {STAT_SOURCES}
+        </p>
       </section>
 
       {/* LIGHT BODY */}
@@ -479,41 +524,51 @@ function Landing() {
         {/* PROBLEM */}
         <section className="mx-auto box-border flex max-w-[1280px] flex-wrap items-center gap-10 px-5 pb-16 pt-20 sm:gap-14 sm:px-8 sm:pb-24 sm:pt-[120px]">
           <div className="min-w-0 flex-[999_1_560px]">
-            <p className={`${eyebrowLight} mb-4`}>• The problem</p>
-            <h2 className={`${sectionTitle} max-w-[620px]`}>Value locked in private companies</h2>
+            <p className={`${eyebrowLight} mb-4`}>• The problem in the Gulf</p>
+            <h2 className={`${sectionTitle} max-w-[620px]`}>
+              Capital is pouring into the MENA. The exits are still years away.
+            </h2>
             <p className="mt-5 max-w-[540px] text-[17px] leading-[1.6] text-[#3d4652]">
-              Holding a private stake often means waiting years for an exit. Selling early is slow,
-              manual and hard to navigate. Baseerah is building a simpler path.
+              From Doha to Riyadh, sovereign programmes, family offices and new funds are backing a
+              generation of regional companies and managers. But a stake in a Gulf private company
+              or fund can stay locked for years: listings are rare, buyers are hard to find, and
+              sales still move through personal networks and paperwork. Baseerah is building a
+              trusted, local path to liquidity, starting in Qatar.
             </p>
           </div>
-          <div className="w-full max-w-[420px] flex-[1_1_300px] rounded-[20px] border border-[#131922]/[.07] bg-white/85 p-6 shadow-[0_8px_28px_rgba(19,25,34,.07)]">
-            <div className="flex items-center justify-between">
-              <p className="m-0 text-[15px] font-semibold">Secondary request</p>
+          <article
+            aria-label="Sample stake listing"
+            className="w-full max-w-[440px] flex-[1_1_320px] rounded-[20px] border border-[#131922]/[.07] bg-white/85 p-6 shadow-[0_8px_28px_rgba(19,25,34,.07)]"
+          >
+            <div>
+              <p className="m-0 text-[15px] font-semibold">{SAMPLE_LISTING.company}</p>
+              <p className="m-0 mt-0.5 text-[13px] text-[#5b6572]">
+                {SAMPLE_LISTING.industry} · {SAMPLE_LISTING.location}
+              </p>
             </div>
+
             <p
-              className={`${mono} mb-1 mt-5 text-[11px] uppercase tracking-[0.08em] text-[#5b6572]`}
+              className={`${mono} mb-1 mt-6 text-[11px] uppercase tracking-[0.08em] text-[#5b6572]`}
             >
-              Private company stake
+              Asking price
             </p>
             <p className="m-0 text-[40px] font-light leading-[1.1] tracking-[-0.045em]">
-              LP-led sale
+              {SAMPLE_LISTING.price}
             </p>
+            <p className="m-0 mt-1 text-[13px] text-[#5b6572]">{SAMPLE_LISTING.stake}</p>
+
             <dl className="m-0 mt-5 flex flex-col gap-2.5 text-sm">
-              {[
-                ["Stage", "Matching"],
-                ["Counterparties", "Vetted"],
-                ["Process", "Managed end to end"],
-              ].map(([term, detail]) => (
+              {SAMPLE_LISTING.facts.map(([term, detail]) => (
                 <div
                   key={term}
-                  className="flex justify-between border-t border-[#131922]/[.07] pt-2.5"
+                  className="flex justify-between gap-4 border-t border-[#131922]/[.07] pt-2.5"
                 >
                   <dt className="text-[#5b6572]">{term}</dt>
-                  <dd className="m-0 font-medium">{detail}</dd>
+                  <dd className="m-0 text-right font-medium">{detail}</dd>
                 </div>
               ))}
             </dl>
-          </div>
+          </article>
         </section>
 
         {/* SALE TYPES */}
@@ -567,12 +622,68 @@ function Landing() {
         duration={1.4}
       />
 
+      {/* TEAM */}
+      <div className="bg-[#f6faf8]">
+        <section
+          id="team"
+          className="mx-auto box-border max-w-[1280px] px-5 pb-4 pt-20 sm:px-8 sm:pb-8 sm:pt-[120px]"
+        >
+          <div className="flex flex-wrap items-start gap-10 sm:gap-14">
+            <div className="min-w-0 flex-[999_1_480px]">
+              <p className={`${eyebrowLight} mb-4`}>• Who's behind Baseerah?</p>
+              <h2 className={`${sectionTitle} max-w-[620px]`}>
+                Building Alongside The Industry.
+              </h2>
+              <p className="mt-5 max-w-[560px] text-[17px] leading-[1.6] text-[#3d4652]">
+                I am an university student building a company and have spent over 8 months contacting and validating with various stakeholders, ranging from VC partners to C-level leaders at banks. A knowledgeable advisory board is being assembled to guide Baseerah's next stage.
+              </p>
+            </div>
+
+            <figure className="m-0 w-full max-w-[420px] flex-[1_1_300px]">
+              <img
+                src={saalimPhoto}
+                alt="Saalim Adesina"
+                className="aspect-[4/5] w-full rounded-[20px] object-cover object-top"
+              />
+              <figcaption className="mt-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="m-0 text-lg font-medium tracking-[-0.02em] text-[#131922]">
+                    Saalim Adesina
+                  </p>
+                  <p
+                    className={`${mono} mt-1 text-[11px] uppercase tracking-[0.1em] text-[#2b6e5f]`}
+                  >
+                    Co-founder
+                  </p>
+                </div>
+                <a
+                  href={LINKEDIN.founder}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Saalim Adesina on LinkedIn"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#131922] text-white transition-colors hover:bg-[#2b3543]"
+                >
+                  <LinkedInIcon size={18} />
+                </a>
+              </figcaption>
+            </figure>
+          </div>
+
+          <p className="mt-14 text-[15px] leading-[1.6] text-[#3d4652] sm:mt-16">
+            <span className={`${mono} mr-3 text-[11px] uppercase tracking-[0.1em] text-[#2b6e5f]`}>
+              Advisory board
+            </span>
+            Coming soon
+          </p>
+        </section>
+      </div>
+
       {/* FAQ */}
       <section id="faq" className="bg-[#f6faf8] px-5 py-20 sm:px-8 sm:py-[120px]">
         <div className="mx-auto flex max-w-[1280px] flex-wrap gap-8 sm:gap-14">
           <div className="flex-[1_1_320px]">
             <p className={`${eyebrowLight} mb-4`}>• Questions</p>
-            <h2 className={sectionTitle}>FAQ</h2>
+            <h2 className={sectionTitle}>Frequently Asked Questions</h2>
           </div>
           <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-3">
             {FAQ.map((item) => (
@@ -608,10 +719,23 @@ function Landing() {
 
       {/* FOOTER */}
       <footer className="mx-auto box-border max-w-[1280px] overflow-hidden px-5 pt-16 sm:px-8 sm:pt-[72px]">
-        <Wordmark size="footer" />
-        <p className="mt-4 max-w-[380px] text-sm leading-[1.6] text-[#a9b4bf]">
-          We're building liquidity for private markets, starting in Doha.
-        </p>
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <Wordmark size="footer" />
+            <p className="mt-4 max-w-[380px] text-sm leading-[1.6] text-[#a9b4bf]">
+              We're building liquidity for private markets.
+            </p>
+          </div>
+          <a
+            href={LINKEDIN.company}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Baseerah on LinkedIn"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#e6ecf0] transition-colors hover:bg-white/10 hover:text-[#a6dccd]"
+          >
+            <LinkedInIcon size={22} />
+          </a>
+        </div>
         <p
           aria-hidden="true"
           className="mb-[-0.18em] mt-12 whitespace-nowrap text-center font-['Geist',sans-serif] text-[clamp(64px,21vw,300px)] font-medium leading-[0.9] tracking-[-0.06em] text-[#77c9b3]"
